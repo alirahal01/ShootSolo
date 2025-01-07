@@ -21,6 +21,34 @@
 		9F4598852D2DD7A9002981C9 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 9F4598842D2DD7A9002981C9 /* FirebaseAuth */; };
 		9F4598872D2DD7A9002981C9 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 9F4598862D2DD7A9002981C9 /* FirebaseCrashlytics */; };
 		9F4598892D2DD7A9002981C9 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 9F4598882D2DD7A9002981C9 /* FirebaseFirestore */; };
+		9F4598952D2DDA2A002981C9 /* ZoomControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F45988C2D2DDA2A002981C9 /* ZoomControlView.swift */; };
+		9F4598962D2DDA2A002981C9 /* SaveTakeDialog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F45988D2D2DDA2A002981C9 /* SaveTakeDialog.swift */; };
+		9F4598972D2DDA2A002981C9 /* RecordingTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F45988E2D2DDA2A002981C9 /* RecordingTimerView.swift */; };
+		9F4598982D2DDA2A002981C9 /* HUDComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F45988F2D2DDA2A002981C9 /* HUDComponents.swift */; };
+		9F4598992D2DDA2A002981C9 /* GridOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598902D2DDA2A002981C9 /* GridOverlay.swift */; };
+		9F45989B2D2DDA2A002981C9 /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598922D2DDA2A002981C9 /* LoadingView.swift */; };
+		9F45989C2D2DDA2A002981C9 /* AuthState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598942D2DDA2A002981C9 /* AuthState.swift */; };
+		9F4598C52D2DDA2F002981C9 /* SettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598A02D2DDA2F002981C9 /* SettingsModel.swift */; };
+		9F4598C62D2DDA2F002981C9 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598A22D2DDA2F002981C9 /* SettingsView.swift */; };
+		9F4598C72D2DDA2F002981C9 /* AdvancedSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598A32D2DDA2F002981C9 /* AdvancedSettingsView.swift */; };
+		9F4598C82D2DDA2F002981C9 /* SettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598A52D2DDA2F002981C9 /* SettingsManager.swift */; };
+		9F4598C92D2DDA2F002981C9 /* CameraViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598A82D2DDA2F002981C9 /* CameraViewModel.swift */; };
+		9F4598CA2D2DDA2F002981C9 /* CameraModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598AA2D2DDA2F002981C9 /* CameraModel.swift */; };
+		9F4598CB2D2DDA2F002981C9 /* CameraHUDOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598AC2D2DDA2F002981C9 /* CameraHUDOverlay.swift */; };
+		9F4598CC2D2DDA2F002981C9 /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598AD2D2DDA2F002981C9 /* CameraPreviewView.swift */; };
+		9F4598CD2D2DDA2F002981C9 /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598AE2D2DDA2F002981C9 /* CameraView.swift */; };
+		9F4598CE2D2DDA2F002981C9 /* MessageHudView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598AF2D2DDA2F002981C9 /* MessageHudView.swift */; };
+		9F4598CF2D2DDA2F002981C9 /* CameraBottomControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598B02D2DDA2F002981C9 /* CameraBottomControls.swift */; };
+		9F4598D02D2DDA2F002981C9 /* SpeechRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598B22D2DDA2F002981C9 /* SpeechRecognizer.swift */; };
+		9F4598D12D2DDA2F002981C9 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598B32D2DDA2F002981C9 /* CameraManager.swift */; };
+		9F4598D22D2DDA2F002981C9 /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598B62D2DDA2F002981C9 /* LoginViewModel.swift */; };
+		9F4598D32D2DDA2F002981C9 /* UserModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598B82D2DDA2F002981C9 /* UserModel.swift */; };
+		9F4598D42D2DDA2F002981C9 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598BA2D2DDA2F002981C9 /* LoginView.swift */; };
+		9F4598D52D2DDA2F002981C9 /* SuccessfulLoginHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598BB2D2DDA2F002981C9 /* SuccessfulLoginHUD.swift */; };
+		9F4598D62D2DDA2F002981C9 /* LoadingHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598BC2D2DDA2F002981C9 /* LoadingHUD.swift */; };
+		9F4598D82D2DDA2F002981C9 /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598BF2D2DDA2F002981C9 /* AuthenticationService.swift */; };
+		9F4598D92D2DDA2F002981C9 /* CreditsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598C22D2DDA2F002981C9 /* CreditsViewModel.swift */; };
+		9F4598DA2D2DDA2F002981C9 /* CreditsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598C42D2DDA2F002981C9 /* CreditsModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,6 +81,34 @@
 		9F4598682D2DD3A4002981C9 /* ShootSoloUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShootSoloUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		9F4598772D2DD43D002981C9 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		9F45987B2D2DD5A9002981C9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		9F45988C2D2DDA2A002981C9 /* ZoomControlView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ZoomControlView.swift; sourceTree = "<group>"; };
+		9F45988D2D2DDA2A002981C9 /* SaveTakeDialog.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SaveTakeDialog.swift; sourceTree = "<group>"; };
+		9F45988E2D2DDA2A002981C9 /* RecordingTimerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RecordingTimerView.swift; sourceTree = "<group>"; };
+		9F45988F2D2DDA2A002981C9 /* HUDComponents.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HUDComponents.swift; sourceTree = "<group>"; };
+		9F4598902D2DDA2A002981C9 /* GridOverlay.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GridOverlay.swift; sourceTree = "<group>"; };
+		9F4598922D2DDA2A002981C9 /* LoadingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
+		9F4598942D2DDA2A002981C9 /* AuthState.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AuthState.swift; sourceTree = "<group>"; };
+		9F4598A02D2DDA2F002981C9 /* SettingsModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsModel.swift; sourceTree = "<group>"; };
+		9F4598A22D2DDA2F002981C9 /* SettingsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		9F4598A32D2DDA2F002981C9 /* AdvancedSettingsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AdvancedSettingsView.swift; sourceTree = "<group>"; };
+		9F4598A52D2DDA2F002981C9 /* SettingsManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsManager.swift; sourceTree = "<group>"; };
+		9F4598A82D2DDA2F002981C9 /* CameraViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraViewModel.swift; sourceTree = "<group>"; };
+		9F4598AA2D2DDA2F002981C9 /* CameraModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraModel.swift; sourceTree = "<group>"; };
+		9F4598AC2D2DDA2F002981C9 /* CameraHUDOverlay.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraHUDOverlay.swift; sourceTree = "<group>"; };
+		9F4598AD2D2DDA2F002981C9 /* CameraPreviewView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
+		9F4598AE2D2DDA2F002981C9 /* CameraView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
+		9F4598AF2D2DDA2F002981C9 /* MessageHudView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MessageHudView.swift; sourceTree = "<group>"; };
+		9F4598B02D2DDA2F002981C9 /* CameraBottomControls.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraBottomControls.swift; sourceTree = "<group>"; };
+		9F4598B22D2DDA2F002981C9 /* SpeechRecognizer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SpeechRecognizer.swift; sourceTree = "<group>"; };
+		9F4598B32D2DDA2F002981C9 /* CameraManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
+		9F4598B62D2DDA2F002981C9 /* LoginViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
+		9F4598B82D2DDA2F002981C9 /* UserModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserModel.swift; sourceTree = "<group>"; };
+		9F4598BA2D2DDA2F002981C9 /* LoginView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		9F4598BB2D2DDA2F002981C9 /* SuccessfulLoginHUD.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SuccessfulLoginHUD.swift; sourceTree = "<group>"; };
+		9F4598BC2D2DDA2F002981C9 /* LoadingHUD.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LoadingHUD.swift; sourceTree = "<group>"; };
+		9F4598BF2D2DDA2F002981C9 /* AuthenticationService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AuthenticationService.swift; sourceTree = "<group>"; };
+		9F4598C22D2DDA2F002981C9 /* CreditsViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CreditsViewModel.swift; sourceTree = "<group>"; };
+		9F4598C42D2DDA2F002981C9 /* CreditsModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CreditsModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,6 +145,8 @@
 		9F45983F2D2DD3A3002981C9 = {
 			isa = PBXGroup;
 			children = (
+				9F45989D2D2DDA2F002981C9 /* Features */,
+				9F45988A2D2DDA2A002981C9 /* Common */,
 				9F4598772D2DD43D002981C9 /* GoogleService-Info.plist */,
 				9F45984A2D2DD3A3002981C9 /* ShootSolo */,
 				9F45985B2D2DD3A4002981C9 /* ShootSoloTests */,
@@ -142,6 +200,200 @@
 				9F4598682D2DD3A4002981C9 /* ShootSoloUITestsLaunchTests.swift */,
 			);
 			path = ShootSoloUITests;
+			sourceTree = "<group>";
+		};
+		9F45988A2D2DDA2A002981C9 /* Common */ = {
+			isa = PBXGroup;
+			children = (
+				9F45988B2D2DDA2A002981C9 /* Components */,
+				9F4598932D2DDA2A002981C9 /* Services */,
+			);
+			path = Common;
+			sourceTree = "<group>";
+		};
+		9F45988B2D2DDA2A002981C9 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				9F45988C2D2DDA2A002981C9 /* ZoomControlView.swift */,
+				9F45988D2D2DDA2A002981C9 /* SaveTakeDialog.swift */,
+				9F45988E2D2DDA2A002981C9 /* RecordingTimerView.swift */,
+				9F45988F2D2DDA2A002981C9 /* HUDComponents.swift */,
+				9F4598902D2DDA2A002981C9 /* GridOverlay.swift */,
+				9F4598922D2DDA2A002981C9 /* LoadingView.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		9F4598932D2DDA2A002981C9 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598942D2DDA2A002981C9 /* AuthState.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		9F45989D2D2DDA2F002981C9 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				9F45989E2D2DDA2F002981C9 /* Settings */,
+				9F4598A62D2DDA2F002981C9 /* Camera */,
+				9F4598B42D2DDA2F002981C9 /* Authentication */,
+				9F4598C02D2DDA2F002981C9 /* Credits */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		9F45989E2D2DDA2F002981C9 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				9F45989F2D2DDA2F002981C9 /* Model */,
+				9F4598A12D2DDA2F002981C9 /* View */,
+				9F4598A42D2DDA2F002981C9 /* Services */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		9F45989F2D2DDA2F002981C9 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598A02D2DDA2F002981C9 /* SettingsModel.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		9F4598A12D2DDA2F002981C9 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598A22D2DDA2F002981C9 /* SettingsView.swift */,
+				9F4598A32D2DDA2F002981C9 /* AdvancedSettingsView.swift */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		9F4598A42D2DDA2F002981C9 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598A52D2DDA2F002981C9 /* SettingsManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		9F4598A62D2DDA2F002981C9 /* Camera */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598A72D2DDA2F002981C9 /* ViewModel */,
+				9F4598A92D2DDA2F002981C9 /* Model */,
+				9F4598AB2D2DDA2F002981C9 /* View */,
+				9F4598B12D2DDA2F002981C9 /* Services */,
+			);
+			path = Camera;
+			sourceTree = "<group>";
+		};
+		9F4598A72D2DDA2F002981C9 /* ViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598A82D2DDA2F002981C9 /* CameraViewModel.swift */,
+			);
+			path = ViewModel;
+			sourceTree = "<group>";
+		};
+		9F4598A92D2DDA2F002981C9 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598AA2D2DDA2F002981C9 /* CameraModel.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		9F4598AB2D2DDA2F002981C9 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598AC2D2DDA2F002981C9 /* CameraHUDOverlay.swift */,
+				9F4598AD2D2DDA2F002981C9 /* CameraPreviewView.swift */,
+				9F4598AE2D2DDA2F002981C9 /* CameraView.swift */,
+				9F4598AF2D2DDA2F002981C9 /* MessageHudView.swift */,
+				9F4598B02D2DDA2F002981C9 /* CameraBottomControls.swift */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		9F4598B12D2DDA2F002981C9 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598B22D2DDA2F002981C9 /* SpeechRecognizer.swift */,
+				9F4598B32D2DDA2F002981C9 /* CameraManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		9F4598B42D2DDA2F002981C9 /* Authentication */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598B52D2DDA2F002981C9 /* ViewModel */,
+				9F4598B72D2DDA2F002981C9 /* Model */,
+				9F4598B92D2DDA2F002981C9 /* View */,
+				9F4598BE2D2DDA2F002981C9 /* Services */,
+			);
+			path = Authentication;
+			sourceTree = "<group>";
+		};
+		9F4598B52D2DDA2F002981C9 /* ViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598B62D2DDA2F002981C9 /* LoginViewModel.swift */,
+			);
+			path = ViewModel;
+			sourceTree = "<group>";
+		};
+		9F4598B72D2DDA2F002981C9 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598B82D2DDA2F002981C9 /* UserModel.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		9F4598B92D2DDA2F002981C9 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598BA2D2DDA2F002981C9 /* LoginView.swift */,
+				9F4598BB2D2DDA2F002981C9 /* SuccessfulLoginHUD.swift */,
+				9F4598BC2D2DDA2F002981C9 /* LoadingHUD.swift */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		9F4598BE2D2DDA2F002981C9 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598BF2D2DDA2F002981C9 /* AuthenticationService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		9F4598C02D2DDA2F002981C9 /* Credits */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598C12D2DDA2F002981C9 /* ViewModel */,
+				9F4598C32D2DDA2F002981C9 /* Model */,
+			);
+			path = Credits;
+			sourceTree = "<group>";
+		};
+		9F4598C12D2DDA2F002981C9 /* ViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598C22D2DDA2F002981C9 /* CreditsViewModel.swift */,
+			);
+			path = ViewModel;
+			sourceTree = "<group>";
+		};
+		9F4598C32D2DDA2F002981C9 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598C42D2DDA2F002981C9 /* CreditsModel.swift */,
+			);
+			path = Model;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -288,7 +540,35 @@
 			buildActionMask = 2147483647;
 			files = (
 				9F45984E2D2DD3A3002981C9 /* ContentView.swift in Sources */,
+				9F4598CC2D2DDA2F002981C9 /* CameraPreviewView.swift in Sources */,
+				9F4598C52D2DDA2F002981C9 /* SettingsModel.swift in Sources */,
+				9F4598CF2D2DDA2F002981C9 /* CameraBottomControls.swift in Sources */,
+				9F4598992D2DDA2A002981C9 /* GridOverlay.swift in Sources */,
+				9F4598982D2DDA2A002981C9 /* HUDComponents.swift in Sources */,
+				9F4598952D2DDA2A002981C9 /* ZoomControlView.swift in Sources */,
+				9F4598D32D2DDA2F002981C9 /* UserModel.swift in Sources */,
+				9F4598D82D2DDA2F002981C9 /* AuthenticationService.swift in Sources */,
+				9F4598CA2D2DDA2F002981C9 /* CameraModel.swift in Sources */,
+				9F4598D42D2DDA2F002981C9 /* LoginView.swift in Sources */,
+				9F4598DA2D2DDA2F002981C9 /* CreditsModel.swift in Sources */,
+				9F4598D12D2DDA2F002981C9 /* CameraManager.swift in Sources */,
+				9F4598CE2D2DDA2F002981C9 /* MessageHudView.swift in Sources */,
 				9F45984C2D2DD3A3002981C9 /* ShootSoloApp.swift in Sources */,
+				9F4598D92D2DDA2F002981C9 /* CreditsViewModel.swift in Sources */,
+				9F4598D62D2DDA2F002981C9 /* LoadingHUD.swift in Sources */,
+				9F4598962D2DDA2A002981C9 /* SaveTakeDialog.swift in Sources */,
+				9F4598C92D2DDA2F002981C9 /* CameraViewModel.swift in Sources */,
+				9F4598D02D2DDA2F002981C9 /* SpeechRecognizer.swift in Sources */,
+				9F45989C2D2DDA2A002981C9 /* AuthState.swift in Sources */,
+				9F4598C62D2DDA2F002981C9 /* SettingsView.swift in Sources */,
+				9F4598CD2D2DDA2F002981C9 /* CameraView.swift in Sources */,
+				9F4598CB2D2DDA2F002981C9 /* CameraHUDOverlay.swift in Sources */,
+				9F4598C82D2DDA2F002981C9 /* SettingsManager.swift in Sources */,
+				9F4598D22D2DDA2F002981C9 /* LoginViewModel.swift in Sources */,
+				9F4598972D2DDA2A002981C9 /* RecordingTimerView.swift in Sources */,
+				9F45989B2D2DDA2A002981C9 /* LoadingView.swift in Sources */,
+				9F4598C72D2DDA2F002981C9 /* AdvancedSettingsView.swift in Sources */,
+				9F4598D52D2DDA2F002981C9 /* SuccessfulLoginHUD.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
