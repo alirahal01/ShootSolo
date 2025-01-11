@@ -64,13 +64,6 @@ struct CameraView: View {
                         stopRecording: viewModel.stopRecording,
                         switchCamera: viewModel.cameraManager.switchCamera
                     )
-
-                    // Add SpeechRecognizerStatusView
-                    HStack {
-                        Spacer()
-                        SpeechRecognizerStatusView(speechRecognizer: viewModel.speechRecognizer, context: .camera)
-                            .padding()
-                    }
                 }
             }
         }
@@ -102,6 +95,7 @@ struct CameraView: View {
             
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack {
+                    SpeechRecognizerStatusView(speechRecognizer: viewModel.speechRecognizer, context: .camera).padding(.leading)
                     if viewModel.isRecording {
                         Text(viewModel.timerText)
                             .font(.system(size: 18, weight: .bold))

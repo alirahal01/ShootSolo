@@ -52,22 +52,32 @@ class CameraViewModel: ObservableObject {
     }
     
     func stopRecording() {
-        cameraManager.stopRecording()
-        stopTimer()
-        showingSaveDialog = true
-        print("Recording stopped, showing save dialog") // Debug print
-    }
-    
-    func saveTake() {
-        cameraManager.saveTake()
-        currentTake += 1
-        showingSaveDialog = false
-    }
-    
-    func discardTake() {
-        // Simply close the dialog without saving
-        showingSaveDialog = false
-    }
+            speechRecognizer.stopListening()  // Stop camera context listening
+            cameraManager.stopRecording()
+            isRecording = false
+            stopTimer()
+            
+            // Start save dialog context listening before showing dialog
+            speechRecognizer.startListening(context: .saveDialog)
+            showingSaveDialog = true
+            
+            print("Recording stopped, showing save dialog")
+        }
+        
+        func saveTake() {
+            cameraManager.saveTake()
+            currentTake += 1
+            showingSaveDialog = false
+            // Start camera context listening after dialog closes
+            speechRecognizer.startListening(context: .camera)
+        }
+        
+        func discardTake() {
+            cameraManager.discardTake()
+            showingSaveDialog = false
+            // Start camera context listening after dialog closes
+            speechRecognizer.startListening(context: .camera)
+        }
     
     func toggleFlash() {
         isFlashOn.toggle()

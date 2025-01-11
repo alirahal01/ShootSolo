@@ -5,18 +5,26 @@ struct SaveTakeDialog: View {
     let onSave: () -> Void
     let onDiscard: () -> Void
     @ObservedObject var speechRecognizer: SpeechRecognizer
-
+    
     var body: some View {
         VStack(spacing: 20) {
-            Text("Save Take?")
+            Text("Save Take \(takeNumber)?")
                 .font(.headline)
             
-            Text("Listening for YES or NO...")
-                .font(.headline)
-                .bold()
-                .foregroundColor(.gray)
-            
-            SpeechRecognizerStatusView(speechRecognizer: speechRecognizer, context: .saveDialog)
+            if let errorMessage = speechRecognizer.errorMessage {
+                Text(errorMessage)
+                    .font(.subheadline)
+                    .foregroundColor(.red)
+                    .multilineTextAlignment(.center)
+            } else {
+                HStack {
+                    SpeechRecognizerStatusView(speechRecognizer: speechRecognizer, context: .saveDialog)
+                    Text("Listening for YES or NO...")
+                        .font(.headline)
+                        .bold()
+                        .foregroundColor(.gray)
+                }
+            }
             
             HStack(spacing: 20) {
                 Button(action: onDiscard) {
@@ -32,7 +40,7 @@ struct SaveTakeDialog: View {
                     Text("Yes")
                         .frame(width: 100)
                         .padding()
-                        .background(Color.red)
+                        .background(Color.green)
                         .foregroundColor(.white)
                         .cornerRadius(8)
                 }
@@ -42,9 +50,6 @@ struct SaveTakeDialog: View {
         .background(Color.white)
         .cornerRadius(16)
         .shadow(radius: 10)
-        .onAppear {
-            speechRecognizer.startListening(context: .saveDialog)
-        }
         .onDisappear {
             speechRecognizer.stopListening()
         }
@@ -58,4 +63,4 @@ struct SaveTakeDialog: View {
         onDiscard: {},
         speechRecognizer: SpeechRecognizer()
     )
-} 
+}

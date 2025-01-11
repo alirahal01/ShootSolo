@@ -2,36 +2,85 @@ import SwiftUI
 
 struct SpeechRecognizerStatusView: View {
     @ObservedObject var speechRecognizer: SpeechRecognizer
-    var context: CommandContext
-
+    let context: CommandContext
+    
+    @State private var isAnimating = false
+    
     var body: some View {
-        HStack {
-            Circle()
-                .fill(speechRecognizer.isListening ? Color.green : Color.red)
-                .frame(width: 10, height: 10)
-            
-            Text(speechRecognizer.isListening ? "Listening..." : "Not Listening")
-                .font(.caption)
-                .foregroundColor(.gray)
-            
-            if !speechRecognizer.isListening {
-                Button(action: {
-                    speechRecognizer.startListening(context: context)
-                }) {
-                    Text("Retry")
-                        .font(.caption)
-                        .foregroundColor(.blue)
+        Button(action: {
+            if speechRecognizer.hasError {
+                speechRecognizer.startListening(context: context)
+            }
+        }) {
+            ZStack {
+                // Background circle
+                Circle()
+                    .fill(backgroundColor)
+                    .frame(width: 25, height: 25)
+                
+                // Icon
+                Group {
+                    if speechRecognizer.hasError {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                    } else {
+                        Image(systemName: "waveform")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .opacity(speechRecognizer.isListening ? 1 : 0.5)
+                            .scaleEffect(isAnimating ? 0.9 : 0.8)
+                    }
                 }
-                .padding(.leading, 5)
             }
         }
-        .padding(5)
-        .background(Color.white.opacity(0.8))
-        .cornerRadius(8)
-        .shadow(radius: 2)
+        .onChange(of: speechRecognizer.isListening) { isListening in
+            if isListening {
+                // Start animation when listening
+                withAnimation(.easeInOut(duration: 1.0).repeatForever()) {
+                    isAnimating = true
+                }
+            } else {
+                // Stop animation when not listening
+                withAnimation {
+                    isAnimating = false
+                }
+            }
+        }
+    }
+    
+    private var backgroundColor: Color {
+        if speechRecognizer.hasError {
+            return .red
+        }
+        return speechRecognizer.isListening ? .green : .gray.opacity(0.8)
     }
 }
 
+// Preview
 #Preview {
-    SpeechRecognizerStatusView(speechRecognizer: SpeechRecognizer(), context: .camera)
-} 
+    Group {
+        HStack(spacing: 20) {
+            // Active state
+            let activeRecognizer = SpeechRecognizer()
+            SpeechRecognizerStatusView(speechRecognizer: activeRecognizer, context: .camera)
+                .onAppear {
+                    activeRecognizer.isListening = true
+                }
+            
+            // Error state
+            let errorRecognizer = SpeechRecognizer()
+            SpeechRecognizerStatusView(speechRecognizer: errorRecognizer, context: .camera)
+                .onAppear {
+                    errorRecognizer.hasError = true
+                    errorRecognizer.errorMessage = "Error"
+                }
+            
+            // Inactive state
+            let inactiveRecognizer = SpeechRecognizer()
+            SpeechRecognizerStatusView(speechRecognizer: inactiveRecognizer, context: .camera)
+        }
+        .padding()
+        .background(Color.black)
+    }
+}

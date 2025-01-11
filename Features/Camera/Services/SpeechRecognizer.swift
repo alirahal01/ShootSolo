@@ -7,163 +7,151 @@ enum CommandContext {
 }
 
 class SpeechRecognizer: NSObject, ObservableObject {
-    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private let speechRecognizer: SFSpeechRecognizer?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
     
     @Published var isListening = false
+    @Published var hasError = false
+    @Published var errorMessage: String?
+    
     var onCommandDetected: ((String) -> Void)?
     
     private var settingsManager: SettingsManager
-
+    private var currentContext: CommandContext = .camera
+    
     init(settingsManager: SettingsManager = SettingsManager.shared) {
+        self.speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
         self.settingsManager = settingsManager
         super.init()
-        requestAuthorization()
-        requestMicrophonePermission()
+        setupAudioSession()
     }
     
-    private func requestMicrophonePermission() {
-        AVAudioSession.sharedInstance().requestRecordPermission { granted in
-            DispatchQueue.main.async {
-                if granted {
-                    print("Microphone permission granted")
-                } else {
-                    print("Microphone permission denied")
-                }
-            }
-        }
-    }
-    
-    private func requestAuthorization() {
-        SFSpeechRecognizer.requestAuthorization { status in
-            DispatchQueue.main.async {
-                switch status {
-                case .authorized:
-                    print("Speech recognition authorized")
-                case .denied:
-                    print("Speech recognition authorization denied")
-                case .restricted:
-                    print("Speech recognition restricted")
-                case .notDetermined:
-                    print("Speech recognition not determined")
-                @unknown default:
-                    print("Speech recognition unknown status")
-                }
-            }
+    private func setupAudioSession() {
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
+            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            print("Audio session setup failed: \(error)")
         }
     }
     
     func startListening(context: CommandContext) {
+        currentContext = context
+        startRecognition()
+    }
+    
+    private func startRecognition() {
+        stopCurrentRecognitionTask()
+        
         guard let speechRecognizer = speechRecognizer, speechRecognizer.isAvailable else {
-            print("Speech recognizer not available")
-            return
-        }
-        guard !isListening else { return }
-        
-        recognitionTask?.cancel()
-        recognitionTask = nil
-        
-        let audioSession = AVAudioSession.sharedInstance()
-        do {
-            try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-        } catch {
-            print("Failed to set up audio session: \(error.localizedDescription)")
+            errorMessage = "Speech recognizer not available"
+            hasError = true
             return
         }
         
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-        
         guard let recognitionRequest = recognitionRequest else { return }
+        
         recognitionRequest.shouldReportPartialResults = true
+        recognitionRequest.taskHint = .confirmation
         
         let inputNode = audioEngine.inputNode
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
+            self?.recognitionRequest?.append(buffer)
+        }
         
         recognitionTask = speechRecognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
             guard let self = self else { return }
-            var isFinal = false
-            
-            if let result = result {
-                let fullText = result.bestTranscription.formattedString.lowercased()
-                isFinal = result.isFinal
-                
-                // Split into words
-                let words = fullText.components(separatedBy: .whitespacesAndNewlines)
-                print("[SpeechRecognizer <><> recognized words: \(words)]")
-                
-                switch context {
-                case .camera:
-                    if words.count >= 2 {
-                        let lastTwoWords = Array(words.suffix(2))
-                        print("Last two words: \(lastTwoWords)")
-                        
-                        if self.settingsManager.isStartCommand(lastTwoWords.joined(separator: " ")) {
-                            print("Start command detected")
-                            self.onCommandDetected?("start")
-                        } else if self.settingsManager.isStopCommand(lastTwoWords.joined(separator: " ")) {
-                            print("Stop command detected")
-                            self.onCommandDetected?("stop")
-                        }
-                    }
-                case .saveDialog:
-                    if let lastWord = words.last {
-                        print("Last word: \(lastWord)")
-                        
-                        if lastWord == "yes" {
-                            print("Yes command detected")
-                            self.onCommandDetected?("yes")
-                        } else if lastWord == "no" {
-                            print("No command detected")
-                            self.onCommandDetected?("no")
-                        }
-                    }
-                }
-            }
             
             if let error = error {
-                print("Recognition error: \(error.localizedDescription)")
-                self.stopListening()
+                self.handleRecognitionError(error)
                 return
             }
-
-            if isFinal {
-                self.stopListening()
+            
+            if let result = result {
+                self.processResult(result)
             }
         }
         
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
-            recognitionRequest.append(buffer)
-        }
-        
-        audioEngine.prepare()
-        
         do {
+            audioEngine.prepare()
             try audioEngine.start()
             isListening = true
+            hasError = false
+            errorMessage = nil
         } catch {
-            print("Failed to start audio engine: \(error.localizedDescription)")
+            print("Audio engine failed to start: \(error)")
+            errorMessage = "Failed to start listening"
+            hasError = true
+        }
+    }
+    
+    private func handleRecognitionError(_ error: Error) {
+        let nsError = error as NSError
+        print("Recognition error: \(error.localizedDescription)")
+        
+        switch nsError.domain {
+        case "kAFAssistantErrorDomain":
+            switch nsError.code {
+            case 1110, 1101:
+                errorMessage = "No speech detected"
+            default:
+                errorMessage = "Recognition error occurred"
+            }
+        default:
+            errorMessage = "Recognition error occurred"
+        }
+        
+        hasError = true
+        isListening = false
+        stopCurrentRecognitionTask()
+    }
+    
+    private func processResult(_ result: SFSpeechRecognitionResult) {
+        let text = result.bestTranscription.formattedString.lowercased()
+        let words = text.components(separatedBy: .whitespacesAndNewlines)
+        
+        switch currentContext {
+        case .camera:
+            if words.count >= 2 {
+                let lastTwoWords = Array(words.suffix(2)).joined(separator: " ")
+                if settingsManager.isStartCommand(lastTwoWords) {
+                    onCommandDetected?("start")
+                } else if settingsManager.isStopCommand(lastTwoWords) {
+                    onCommandDetected?("stop")
+                }
+            }
+        case .saveDialog:
+            if let lastWord = words.last {
+                if lastWord == "yes" {
+                    onCommandDetected?("yes")
+                } else if lastWord == "no" {
+                    onCommandDetected?("no")
+                }
+            }
         }
     }
     
     func stopListening() {
+        stopCurrentRecognitionTask()
+        isListening = false
+    }
+    
+    private func stopCurrentRecognitionTask() {
         audioEngine.stop()
         audioEngine.inputNode.removeTap(onBus: 0)
         recognitionRequest?.endAudio()
         recognitionTask?.cancel()
+        recognitionRequest = nil
         recognitionTask = nil
-        isListening = false
-        
-        do {
-            try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-        } catch {
-            print("Failed to deactivate audio session: \(error.localizedDescription)")
-        }
     }
     
     deinit {
-        print("SpeechRecognizer deinitialized")
+        stopListening()
     }
-} 
+}
