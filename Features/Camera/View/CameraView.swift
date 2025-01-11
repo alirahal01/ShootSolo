@@ -4,7 +4,8 @@ import Photos
 
 struct CameraView: View {
     @StateObject private var viewModel: CameraViewModel
-
+    @Environment(\.scenePhase) private var scenePhase
+    
     init(viewModel: CameraViewModel = CameraViewModel()) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
@@ -108,6 +109,15 @@ struct CameraView: View {
         .onDisappear {
             viewModel.speechRecognizer.stopListening()
             print("CameraView disappeared, stopped listening") // Debug print
+        }
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .active {
+                viewModel.speechRecognizer.startListening()
+                print("App became active, started listening") // Debug print
+            } else if newPhase == .background || newPhase == .inactive {
+                viewModel.speechRecognizer.stopListening()
+                print("App moved to background/inactive, stopped listening") // Debug print
+            }
         }
     }
 }

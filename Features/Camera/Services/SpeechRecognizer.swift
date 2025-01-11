@@ -89,7 +89,7 @@ class SpeechRecognizer: NSObject, ObservableObject {
                 print("[SpeechRecognizer <><> recognized words: \(words)]")
                 if words.count >= 2 {
                     let lastTwoWords = Array(words.suffix(2))
-                    print("Last two words: \(lastTwoWords)") // Debug print
+                    print("Last two words: \(lastTwoWords)")
                     
                     // Check exact match for both words
                     if self.settingsManager.isStartCommand(lastTwoWords.joined(separator: " ")) {
