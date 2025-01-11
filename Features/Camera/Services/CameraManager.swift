@@ -4,6 +4,8 @@ import Photos
 class CameraManager: NSObject, ObservableObject {
     @Published var session = AVCaptureSession()
     @Published var isRecording = false
+    @Published var permissionGranted = false
+    
     private var videoOutput: AVCaptureMovieFileOutput?
     private var currentCamera: AVCaptureDevice?
     private var currentPosition: AVCaptureDevice.Position = .back
@@ -11,17 +13,64 @@ class CameraManager: NSObject, ObservableObject {
     
     override init() {
         super.init()
-        setupCamera()
+        checkPermissions()
+    }
+    
+    private func checkPermissions() {
+        // Check camera permissions
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            // Camera permissions granted, now check photo library permissions
+            checkPhotoLibraryPermissions()
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
+                if granted {
+                    DispatchQueue.main.async {
+                        self?.checkPhotoLibraryPermissions()
+                    }
+                }
+            }
+        default:
+            break
+        }
+    }
+    
+    private func checkPhotoLibraryPermissions() {
+        switch PHPhotoLibrary.authorizationStatus() {
+        case .authorized, .limited:
+            setupCamera()
+            DispatchQueue.main.async {
+                self.permissionGranted = true
+            }
+        case .notDetermined:
+            PHPhotoLibrary.requestAuthorization { [weak self] status in
+                DispatchQueue.main.async {
+                    if status == .authorized || status == .limited {
+                        self?.setupCamera()
+                        self?.permissionGranted = true
+                    }
+                }
+            }
+        default:
+            break
+        }
     }
     
     private func setupCamera() {
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else { return }
+        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
+            print("Failed to get camera device")
+            return
+        }
         currentCamera = device
+        
+        session.beginConfiguration()
         
         do {
             let input = try AVCaptureDeviceInput(device: device)
             if session.canAddInput(input) {
                 session.addInput(input)
+            } else {
+                print("Could not add video input")
             }
             
             // Add audio input
@@ -29,25 +78,35 @@ class CameraManager: NSObject, ObservableObject {
                let audioInput = try? AVCaptureDeviceInput(device: audioDevice) {
                 if session.canAddInput(audioInput) {
                     session.addInput(audioInput)
+                } else {
+                    print("Could not add audio input")
                 }
             }
             
             videoOutput = AVCaptureMovieFileOutput()
             if let videoOutput = videoOutput, session.canAddOutput(videoOutput) {
                 session.addOutput(videoOutput)
+            } else {
+                print("Could not add video output")
             }
             
-            DispatchQueue.global(qos: .userInitiated).async {
-                self.session.startRunning()
+            session.commitConfiguration()
+            
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                self?.session.startRunning()
             }
         } catch {
             print("Failed to setup camera: \(error.localizedDescription)")
+            session.commitConfiguration()
         }
     }
     
     func toggleFlash(isOn: Bool) {
         guard let device = currentCamera,
-              device.hasTorch else { return }
+              device.hasTorch else {
+            print("Flash not available")
+            return
+        }
         
         do {
             try device.lockForConfiguration()
@@ -59,22 +118,38 @@ class CameraManager: NSObject, ObservableObject {
     }
     
     func switchCamera() {
+        guard permissionGranted else { return }
+        
         session.beginConfiguration()
         
         // Remove existing input
-        if let currentInput = session.inputs.first as? AVCaptureDeviceInput {
-            session.removeInput(currentInput)
+        session.inputs.forEach { input in
+            session.removeInput(input)
         }
         
         // Switch camera position
         currentPosition = currentPosition == .back ? .front : .back
-        guard let newCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: currentPosition) else { return }
+        guard let newCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: currentPosition) else {
+            print("Failed to get new camera device")
+            session.commitConfiguration()
+            return
+        }
         currentCamera = newCamera
         
         do {
             let newInput = try AVCaptureDeviceInput(device: newCamera)
             if session.canAddInput(newInput) {
                 session.addInput(newInput)
+            } else {
+                print("Could not add new camera input")
+            }
+            
+            // Re-add audio input
+            if let audioDevice = AVCaptureDevice.default(for: .audio),
+               let audioInput = try? AVCaptureDeviceInput(device: audioDevice) {
+                if session.canAddInput(audioInput) {
+                    session.addInput(audioInput)
+                }
             }
         } catch {
             print("Error switching cameras: \(error.localizedDescription)")
@@ -84,52 +159,83 @@ class CameraManager: NSObject, ObservableObject {
     }
     
     func startRecording() {
-        guard let videoOutput = videoOutput else { return }
+        guard permissionGranted else { return }
+        guard let videoOutput = videoOutput else {
+            print("Video output not available")
+            return
+        }
         
-        let outputPath = NSTemporaryDirectory() + "output.mov"
-        let outputURL = URL(fileURLWithPath: outputPath)
-        videoOutput.startRecording(to: outputURL, recordingDelegate: self)
+        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        let fileUrl = paths[0].appendingPathComponent("video_\(Date().timeIntervalSince1970).mov")
+        currentVideoUrl = fileUrl
         
-        isRecording = true
-        print("Camera started recording") // Debug print
+        // Start recording on a background queue
+        DispatchQueue.global(qos: .userInitiated).async {
+            videoOutput.startRecording(to: fileUrl, recordingDelegate: self)
+            DispatchQueue.main.async {
+                self.isRecording = true
+            }
+        }
     }
     
     func stopRecording() {
+        guard isRecording else { return }
+        
         videoOutput?.stopRecording()
-        isRecording = false
-        print("Camera stopped recording") // Debug print
+        DispatchQueue.main.async {
+            self.isRecording = false
+        }
     }
     
     func saveTake() {
-        guard let videoURL = currentVideoUrl else { return }
+        guard let videoUrl = currentVideoUrl else {
+            print("No video URL available")
+            return
+        }
         
-        // Define the destination URL for the saved video
-        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let destinationURL = documentsDirectory.appendingPathComponent("SavedVideo.mov")
+        guard FileManager.default.fileExists(at: videoUrl.path) else {
+            print("Video file doesn't exist at path: \(videoUrl.path)")
+            return
+        }
         
-        do {
-            // Move the video file to the destination
-            try FileManager.default.moveItem(at: videoURL, to: destinationURL)
-            print("Video saved to \(destinationURL)")
-        } catch {
-            print("Failed to save video: \(error.localizedDescription)")
+        // Ensure we're on the main thread for UI updates
+        DispatchQueue.main.async {
+            PHPhotoLibrary.shared().performChanges {
+                let request = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: videoUrl)
+                request?.creationDate = Date()
+            } completionHandler: { [weak self] success, error in
+                DispatchQueue.main.async {
+                    if success {
+                        print("Video saved successfully to gallery")
+                        self?.cleanupTempFile()
+                    } else {
+                        print("Error saving video: \(error?.localizedDescription ?? "Unknown error")")
+                    }
+                }
+            }
         }
     }
     
     func discardTake() {
-        guard let videoURL = currentVideoUrl else { return }
-        
-        do {
-            // Delete the temporary video file
-            try FileManager.default.removeItem(at: videoURL)
-            print("Video discarded")
-        } catch {
-            print("Failed to discard video: \(error.localizedDescription)")
+        cleanupTempFile()
+    }
+    
+    private func cleanupTempFile() {
+        if let videoUrl = currentVideoUrl {
+            do {
+                try FileManager.default.removeItem(at: videoUrl)
+                currentVideoUrl = nil
+            } catch {
+                print("Error cleaning up temp file: \(error.localizedDescription)")
+            }
         }
     }
     
     func setZoomFactor(_ zoomFactor: CGFloat) {
-        guard let device = currentCamera else { return }
+        guard let device = currentCamera else {
+            print("Camera device not available")
+            return
+        }
         
         do {
             try device.lockForConfiguration()
@@ -141,10 +247,27 @@ class CameraManager: NSObject, ObservableObject {
     }
 }
 
+extension FileManager {
+    func fileExists(at path: String) -> Bool {
+        return FileManager.default.fileExists(atPath: path)
+    }
+}
+
 extension CameraManager: AVCaptureFileOutputRecordingDelegate {
+    func fileOutput(_ output: AVCaptureFileOutput, didStartRecordingTo fileURL: URL, from connections: [AVCaptureConnection]) {
+        // Optional: Handle recording start
+        print("Started recording to: \(fileURL.path)")
+    }
+    
     func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
         if let error = error {
             print("Error recording video: \(error.localizedDescription)")
+            return
+        }
+        
+        // Update currentVideoUrl on main thread
+        DispatchQueue.main.async {
+            self.currentVideoUrl = outputFileURL
         }
     }
 }
