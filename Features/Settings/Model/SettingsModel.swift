@@ -1,35 +1,11 @@
 import Foundation
 
-//struct SettingsModel {
-//    var startKeyword: String
-//    var stopKeyword: String
-//    var fileNameFormat: String
-//    var saveLocation: String
-//    var appVoice: String
-//    var framerate: String
-//    var resolution: String
-//    var isGridEnabled: Bool
-//    
-//    static var defaultSettings: SettingsModel {
-//        return SettingsModel(
-//            startKeyword: "HEY ACTION",
-//            stopKeyword: "HEY CUT",
-//            fileNameFormat: "Take [n]",
-//            saveLocation: "Gallery",
-//            appVoice: "Suzan",
-//            framerate: "30fps",
-//            resolution: "4k",
-//            isGridEnabled: false
-//        )
-//    }
-//}
-
 // RecordingKeywords.swift
 enum RecordingKeywords: String, Codable, CaseIterable {
-    case heyAction = "Hey Action"
-    case start = "Start"
-    case startNow = "Start Now"
-    case go = "Go"
+    case heyAction = "Camera Start"
+    case start = "Record Begin"
+    case startNow = "Action Rolling"
+    case go = "Rolling Camera"
     
     static var defaultStartKeyword: RecordingKeywords {
         .heyAction
@@ -37,10 +13,10 @@ enum RecordingKeywords: String, Codable, CaseIterable {
 }
 
 enum StopKeywords: String, Codable, CaseIterable {
-    case heyCut = "Hey Cut"
-    case stop = "Stop"
-    case stopNow = "Stop Now"
-    case cut = "Cut"
+    case heyCut = "Camera Stop"
+    case stop = "Record End"
+    case stopNow = "Action Cut"
+    case cut = "Cut Rolling"
     
     static var defaultStopKeyword: StopKeywords {
         .heyCut
