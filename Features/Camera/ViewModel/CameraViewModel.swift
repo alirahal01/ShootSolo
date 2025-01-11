@@ -35,6 +35,10 @@ class CameraViewModel: ObservableObject {
                 self?.startRecording()
             case "stop":
                 self?.stopRecording()
+            case "yes":
+                self?.saveTake()
+            case "no":
+                self?.discardTake()
             default:
                 break
             }
@@ -51,6 +55,7 @@ class CameraViewModel: ObservableObject {
         cameraManager.stopRecording()
         stopTimer()
         showingSaveDialog = true
+        print("Recording stopped, showing save dialog") // Debug print
     }
     
     func saveTake() {
@@ -60,7 +65,7 @@ class CameraViewModel: ObservableObject {
     }
     
     func discardTake() {
-        cameraManager.discardTake()
+        // Simply close the dialog without saving
         showingSaveDialog = false
     }
     

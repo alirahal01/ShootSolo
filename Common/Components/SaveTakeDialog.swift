@@ -4,6 +4,7 @@ struct SaveTakeDialog: View {
     let takeNumber: Int
     let onSave: () -> Void
     let onDiscard: () -> Void
+    @ObservedObject var speechRecognizer: SpeechRecognizer
 
     var body: some View {
         VStack(spacing: 20) {
@@ -14,6 +15,8 @@ struct SaveTakeDialog: View {
                 .font(.headline)
                 .bold()
                 .foregroundColor(.gray)
+            
+            SpeechRecognizerStatusView(speechRecognizer: speechRecognizer, context: .saveDialog)
             
             HStack(spacing: 20) {
                 Button(action: onDiscard) {
@@ -39,6 +42,12 @@ struct SaveTakeDialog: View {
         .background(Color.white)
         .cornerRadius(16)
         .shadow(radius: 10)
+        .onAppear {
+            speechRecognizer.startListening(context: .saveDialog)
+        }
+        .onDisappear {
+            speechRecognizer.stopListening()
+        }
     }
 }
 
@@ -46,6 +55,7 @@ struct SaveTakeDialog: View {
     SaveTakeDialog(
         takeNumber: 1,
         onSave: {},
-        onDiscard: {}
+        onDiscard: {},
+        speechRecognizer: SpeechRecognizer()
     )
 } 

@@ -1,6 +1,11 @@
 import Foundation
 import Speech
 
+enum CommandContext {
+    case camera
+    case saveDialog
+}
+
 class SpeechRecognizer: NSObject, ObservableObject {
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
@@ -50,11 +55,11 @@ class SpeechRecognizer: NSObject, ObservableObject {
         }
     }
     
-    func startListening() {
+    func startListening(context: CommandContext) {
         guard let speechRecognizer = speechRecognizer, speechRecognizer.isAvailable else {
-               print("Speech recognizer not available")
-               return
-           }
+            print("Speech recognizer not available")
+            return
+        }
         guard !isListening else { return }
         
         recognitionTask?.cancel()
@@ -84,20 +89,35 @@ class SpeechRecognizer: NSObject, ObservableObject {
                 let fullText = result.bestTranscription.formattedString.lowercased()
                 isFinal = result.isFinal
                 
-                // Split into words and get last two
+                // Split into words
                 let words = fullText.components(separatedBy: .whitespacesAndNewlines)
                 print("[SpeechRecognizer <><> recognized words: \(words)]")
-                if words.count >= 2 {
-                    let lastTwoWords = Array(words.suffix(2))
-                    print("Last two words: \(lastTwoWords)")
-                    
-                    // Check exact match for both words
-                    if self.settingsManager.isStartCommand(lastTwoWords.joined(separator: " ")) {
-                        print("Start command detected")
-                        self.onCommandDetected?("start")
-                    } else if self.settingsManager.isStopCommand(lastTwoWords.joined(separator: " ")) {
-                        print("Stop command detected")
-                        self.onCommandDetected?("stop")
+                
+                switch context {
+                case .camera:
+                    if words.count >= 2 {
+                        let lastTwoWords = Array(words.suffix(2))
+                        print("Last two words: \(lastTwoWords)")
+                        
+                        if self.settingsManager.isStartCommand(lastTwoWords.joined(separator: " ")) {
+                            print("Start command detected")
+                            self.onCommandDetected?("start")
+                        } else if self.settingsManager.isStopCommand(lastTwoWords.joined(separator: " ")) {
+                            print("Stop command detected")
+                            self.onCommandDetected?("stop")
+                        }
+                    }
+                case .saveDialog:
+                    if let lastWord = words.last {
+                        print("Last word: \(lastWord)")
+                        
+                        if lastWord == "yes" {
+                            print("Yes command detected")
+                            self.onCommandDetected?("yes")
+                        } else if lastWord == "no" {
+                            print("No command detected")
+                            self.onCommandDetected?("no")
+                        }
                     }
                 }
             }
@@ -105,20 +125,11 @@ class SpeechRecognizer: NSObject, ObservableObject {
             if let error = error {
                 print("Recognition error: \(error.localizedDescription)")
                 self.stopListening()
-                
-                // Add delay before restart
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    self.startListening()
-                }
                 return
             }
 
             if isFinal {
                 self.stopListening()
-                // Add delay before restart
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    self.startListening()
-                }
             }
         }
         
@@ -150,5 +161,9 @@ class SpeechRecognizer: NSObject, ObservableObject {
         } catch {
             print("Failed to deactivate audio session: \(error.localizedDescription)")
         }
+    }
+    
+    deinit {
+        print("SpeechRecognizer deinitialized")
     }
 } 

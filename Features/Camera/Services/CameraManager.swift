@@ -86,41 +86,46 @@ class CameraManager: NSObject, ObservableObject {
     func startRecording() {
         guard let videoOutput = videoOutput else { return }
         
-        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-        let fileUrl = paths[0].appendingPathComponent("take\(Date().timeIntervalSince1970).mov")
-        currentVideoUrl = fileUrl
-        videoOutput.startRecording(to: fileUrl, recordingDelegate: self)
+        let outputPath = NSTemporaryDirectory() + "output.mov"
+        let outputURL = URL(fileURLWithPath: outputPath)
+        videoOutput.startRecording(to: outputURL, recordingDelegate: self)
+        
         isRecording = true
+        print("Camera started recording") // Debug print
     }
     
     func stopRecording() {
         videoOutput?.stopRecording()
         isRecording = false
+        print("Camera stopped recording") // Debug print
     }
     
     func saveTake() {
-        guard let videoUrl = currentVideoUrl else { return }
+        guard let videoURL = currentVideoUrl else { return }
         
-        PHPhotoLibrary.requestAuthorization { status in
-            guard status == .authorized else { return }
-            
-            PHPhotoLibrary.shared().performChanges {
-                PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: videoUrl)
-            } completionHandler: { success, error in
-                if success {
-                    print("Video saved to gallery")
-                } else if let error = error {
-                    print("Error saving video: \(error.localizedDescription)")
-                }
-            }
+        // Define the destination URL for the saved video
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let destinationURL = documentsDirectory.appendingPathComponent("SavedVideo.mov")
+        
+        do {
+            // Move the video file to the destination
+            try FileManager.default.moveItem(at: videoURL, to: destinationURL)
+            print("Video saved to \(destinationURL)")
+        } catch {
+            print("Failed to save video: \(error.localizedDescription)")
         }
     }
     
     func discardTake() {
-        if let videoUrl = currentVideoUrl {
-            try? FileManager.default.removeItem(at: videoUrl)
+        guard let videoURL = currentVideoUrl else { return }
+        
+        do {
+            // Delete the temporary video file
+            try FileManager.default.removeItem(at: videoURL)
+            print("Video discarded")
+        } catch {
+            print("Failed to discard video: \(error.localizedDescription)")
         }
-        currentVideoUrl = nil
     }
     
     func setZoomFactor(_ zoomFactor: CGFloat) {

@@ -49,6 +49,7 @@
 		9F4598D82D2DDA2F002981C9 /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598BF2D2DDA2F002981C9 /* AuthenticationService.swift */; };
 		9F4598D92D2DDA2F002981C9 /* CreditsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598C22D2DDA2F002981C9 /* CreditsViewModel.swift */; };
 		9F4598DA2D2DDA2F002981C9 /* CreditsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598C42D2DDA2F002981C9 /* CreditsModel.swift */; };
+		9F4598DC2D329F36002981C9 /* SpeechRecognizerStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598DB2D329F36002981C9 /* SpeechRecognizerStatusView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -109,6 +110,7 @@
 		9F4598BF2D2DDA2F002981C9 /* AuthenticationService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AuthenticationService.swift; sourceTree = "<group>"; };
 		9F4598C22D2DDA2F002981C9 /* CreditsViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CreditsViewModel.swift; sourceTree = "<group>"; };
 		9F4598C42D2DDA2F002981C9 /* CreditsModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CreditsModel.swift; sourceTree = "<group>"; };
+		9F4598DB2D329F36002981C9 /* SpeechRecognizerStatusView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SpeechRecognizerStatusView.swift; path = Common/Components/SpeechRecognizerStatusView.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -308,6 +310,7 @@
 		9F4598AB2D2DDA2F002981C9 /* View */ = {
 			isa = PBXGroup;
 			children = (
+				9F4598DB2D329F36002981C9 /* SpeechRecognizerStatusView.swift */,
 				9F4598AC2D2DDA2F002981C9 /* CameraHUDOverlay.swift */,
 				9F4598AD2D2DDA2F002981C9 /* CameraPreviewView.swift */,
 				9F4598AE2D2DDA2F002981C9 /* CameraView.swift */,
@@ -563,6 +566,7 @@
 				9F4598C62D2DDA2F002981C9 /* SettingsView.swift in Sources */,
 				9F4598CD2D2DDA2F002981C9 /* CameraView.swift in Sources */,
 				9F4598CB2D2DDA2F002981C9 /* CameraHUDOverlay.swift in Sources */,
+				9F4598DC2D329F36002981C9 /* SpeechRecognizerStatusView.swift in Sources */,
 				9F4598C82D2DDA2F002981C9 /* SettingsManager.swift in Sources */,
 				9F4598D22D2DDA2F002981C9 /* LoginViewModel.swift in Sources */,
 				9F4598972D2DDA2A002981C9 /* RecordingTimerView.swift in Sources */,

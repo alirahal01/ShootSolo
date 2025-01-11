@@ -27,8 +27,21 @@ struct CameraView: View {
                 SaveTakeDialog(
                     takeNumber: viewModel.currentTake,
                     onSave: viewModel.saveTake,
-                    onDiscard: viewModel.discardTake
+                    onDiscard: viewModel.discardTake,
+                    speechRecognizer: viewModel.speechRecognizer
                 )
+                .onAppear {
+                    viewModel.speechRecognizer.stopListening()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        viewModel.speechRecognizer.startListening(context: .saveDialog)
+                    }
+                }
+                .onDisappear {
+                    viewModel.speechRecognizer.stopListening()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        viewModel.speechRecognizer.startListening(context: .camera)
+                    }
+                }
             } else {
                 // UI Controls
                 VStack {
@@ -51,6 +64,13 @@ struct CameraView: View {
                         stopRecording: viewModel.stopRecording,
                         switchCamera: viewModel.cameraManager.switchCamera
                     )
+
+                    // Add SpeechRecognizerStatusView
+                    HStack {
+                        Spacer()
+                        SpeechRecognizerStatusView(speechRecognizer: viewModel.speechRecognizer, context: .camera)
+                            .padding()
+                    }
                 }
             }
         }
@@ -103,7 +123,9 @@ struct CameraView: View {
             }
         }
         .onAppear {
-            viewModel.speechRecognizer.startListening()
+            if !viewModel.showingSaveDialog {
+                viewModel.speechRecognizer.startListening(context: .camera)
+            }
             print("CameraView appeared, started listening") // Debug print
         }
         .onDisappear {
@@ -111,8 +133,8 @@ struct CameraView: View {
             print("CameraView disappeared, stopped listening") // Debug print
         }
         .onChange(of: scenePhase) { newPhase in
-            if newPhase == .active {
-                viewModel.speechRecognizer.startListening()
+            if newPhase == .active && !viewModel.showingSaveDialog {
+                viewModel.speechRecognizer.startListening(context: .camera)
                 print("App became active, started listening") // Debug print
             } else if newPhase == .background || newPhase == .inactive {
                 viewModel.speechRecognizer.stopListening()
