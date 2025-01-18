@@ -5,6 +5,7 @@ struct CreditsView: View {
     @StateObject private var creditsManager = CreditsManager.shared
     @Environment(\.dismiss) private var dismiss
     @State private var showingError = false
+    @Environment(\.isStoreKitTest) private var isStoreKitTest
     
     var body: some View {
         VStack(spacing: 20) {
@@ -95,6 +96,18 @@ struct CreditsView: View {
                 }
                 .padding(.horizontal)
             }
+            
+            #if DEBUG
+            // Debug info
+            VStack {
+                Text("Environment: \(isStoreKitTest ? "Testing" : "Production")")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                Text("Balance: \(creditsManager.creditsBalance)")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
+            #endif
         }
         .padding(.vertical)
         .alert("Error", isPresented: $showingError) {
@@ -104,6 +117,11 @@ struct CreditsView: View {
         }
         .onChange(of: creditsManager.error) { error in
             showingError = error != nil
+        }
+        .onAppear {
+            #if DEBUG
+            print("Products available: \(creditsManager.products.map { $0.id })")
+            #endif
         }
     }
 }

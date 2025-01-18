@@ -90,6 +90,10 @@ class CreditsManager: ObservableObject {
     }
     
     func purchase(_ product: Product) async {
+        #if DEBUG
+        print("Attempting to purchase: \(product.id)")
+        #endif
+        
         guard creditsBalance < 999 else {
             error = "Maximum credits limit reached"
             return
@@ -100,6 +104,10 @@ class CreditsManager: ObservableObject {
         
         do {
             let result = try await product.purchase()
+            
+            #if DEBUG
+            print("Purchase result: \(result)")
+            #endif
             
             switch result {
             case .success(let verification):
@@ -121,6 +129,9 @@ class CreditsManager: ObservableObject {
                 self.error = "Unknown purchase result"
             }
         } catch {
+            #if DEBUG
+            print("Purchase failed with error: \(error)")
+            #endif
             self.error = "Purchase failed: \(error.localizedDescription)"
         }
     }
