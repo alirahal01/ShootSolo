@@ -101,6 +101,17 @@ class CameraManager: NSObject, ObservableObject {
         }
     }
     
+    private func setupAudioSession() {
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            // Remove any notification registration
+            try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
+            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            print("Audio session setup failed: \(error)")
+        }
+    }
+    
     func toggleFlash(isOn: Bool) {
         guard let device = currentCamera,
               device.hasTorch else {

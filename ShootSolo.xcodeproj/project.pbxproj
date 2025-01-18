@@ -50,6 +50,11 @@
 		9F4598D92D2DDA2F002981C9 /* CreditsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598C22D2DDA2F002981C9 /* CreditsViewModel.swift */; };
 		9F4598DA2D2DDA2F002981C9 /* CreditsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598C42D2DDA2F002981C9 /* CreditsModel.swift */; };
 		9F4598DC2D329F36002981C9 /* SpeechRecognizerStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598DB2D329F36002981C9 /* SpeechRecognizerStatusView.swift */; };
+		9F4598DF2D33387B002981C9 /* CreditsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598DE2D33387B002981C9 /* CreditsView.swift */; };
+		9F4598E22D333883002981C9 /* CreditsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598E12D333883002981C9 /* CreditsManager.swift */; };
+		9F4598E42D333892002981C9 /* IAPProduct.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598E32D333892002981C9 /* IAPProduct.swift */; };
+		9F4598E72D341336002981C9 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9F4598E62D341336002981C9 /* StoreKit.framework */; };
+		9F4598EA2D3545BD002981C9 /* AdRewardManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598E92D3545BD002981C9 /* AdRewardManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -111,6 +116,13 @@
 		9F4598C22D2DDA2F002981C9 /* CreditsViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CreditsViewModel.swift; sourceTree = "<group>"; };
 		9F4598C42D2DDA2F002981C9 /* CreditsModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CreditsModel.swift; sourceTree = "<group>"; };
 		9F4598DB2D329F36002981C9 /* SpeechRecognizerStatusView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SpeechRecognizerStatusView.swift; path = Common/Components/SpeechRecognizerStatusView.swift; sourceTree = SOURCE_ROOT; };
+		9F4598DE2D33387B002981C9 /* CreditsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CreditsView.swift; sourceTree = "<group>"; };
+		9F4598E12D333883002981C9 /* CreditsManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CreditsManager.swift; sourceTree = "<group>"; };
+		9F4598E32D333892002981C9 /* IAPProduct.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IAPProduct.swift; sourceTree = "<group>"; };
+		9F4598E62D341336002981C9 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		9F4598E82D34133C002981C9 /* ShootSolo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShootSolo.entitlements; sourceTree = "<group>"; };
+		9F4598E92D3545BD002981C9 /* AdRewardManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = AdRewardManager.swift; path = Services/AdRewardManager.swift; sourceTree = "<group>"; };
+		9F4598EB2D355453002981C9 /* ShootSoloProducts.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = ShootSoloProducts.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -119,6 +131,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9F45987E2D2DD713002981C9 /* GoogleSignIn in Frameworks */,
+				9F4598E72D341336002981C9 /* StoreKit.framework in Frameworks */,
 				9F4598802D2DD713002981C9 /* GoogleSignInSwift in Frameworks */,
 				9F4598872D2DD7A9002981C9 /* FirebaseCrashlytics in Frameworks */,
 				9F4598832D2DD7A9002981C9 /* FirebaseAnalytics in Frameworks */,
@@ -154,6 +167,7 @@
 				9F45985B2D2DD3A4002981C9 /* ShootSoloTests */,
 				9F4598652D2DD3A4002981C9 /* ShootSoloUITests */,
 				9F4598492D2DD3A3002981C9 /* Products */,
+				9F4598E52D341336002981C9 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -170,6 +184,7 @@
 		9F45984A2D2DD3A3002981C9 /* ShootSolo */ = {
 			isa = PBXGroup;
 			children = (
+				9F4598E82D34133C002981C9 /* ShootSolo.entitlements */,
 				9F45987B2D2DD5A9002981C9 /* Info.plist */,
 				9F45984B2D2DD3A3002981C9 /* ShootSoloApp.swift */,
 				9F45984D2D2DD3A3002981C9 /* ContentView.swift */,
@@ -377,8 +392,12 @@
 		9F4598C02D2DDA2F002981C9 /* Credits */ = {
 			isa = PBXGroup;
 			children = (
+				9F4598E92D3545BD002981C9 /* AdRewardManager.swift */,
+				9F4598E02D333883002981C9 /* Services */,
+				9F4598DD2D33387B002981C9 /* View */,
 				9F4598C12D2DDA2F002981C9 /* ViewModel */,
 				9F4598C32D2DDA2F002981C9 /* Model */,
+				9F4598EB2D355453002981C9 /* ShootSoloProducts.storekit */,
 			);
 			path = Credits;
 			sourceTree = "<group>";
@@ -394,9 +413,34 @@
 		9F4598C32D2DDA2F002981C9 /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				9F4598E32D333892002981C9 /* IAPProduct.swift */,
 				9F4598C42D2DDA2F002981C9 /* CreditsModel.swift */,
 			);
 			path = Model;
+			sourceTree = "<group>";
+		};
+		9F4598DD2D33387B002981C9 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598DE2D33387B002981C9 /* CreditsView.swift */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		9F4598E02D333883002981C9 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598E12D333883002981C9 /* CreditsManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		9F4598E52D341336002981C9 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				9F4598E62D341336002981C9 /* StoreKit.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -549,10 +593,12 @@
 				9F4598992D2DDA2A002981C9 /* GridOverlay.swift in Sources */,
 				9F4598982D2DDA2A002981C9 /* HUDComponents.swift in Sources */,
 				9F4598952D2DDA2A002981C9 /* ZoomControlView.swift in Sources */,
+				9F4598E22D333883002981C9 /* CreditsManager.swift in Sources */,
 				9F4598D32D2DDA2F002981C9 /* UserModel.swift in Sources */,
 				9F4598D82D2DDA2F002981C9 /* AuthenticationService.swift in Sources */,
 				9F4598CA2D2DDA2F002981C9 /* CameraModel.swift in Sources */,
 				9F4598D42D2DDA2F002981C9 /* LoginView.swift in Sources */,
+				9F4598E42D333892002981C9 /* IAPProduct.swift in Sources */,
 				9F4598DA2D2DDA2F002981C9 /* CreditsModel.swift in Sources */,
 				9F4598D12D2DDA2F002981C9 /* CameraManager.swift in Sources */,
 				9F4598CE2D2DDA2F002981C9 /* MessageHudView.swift in Sources */,
@@ -563,6 +609,8 @@
 				9F4598C92D2DDA2F002981C9 /* CameraViewModel.swift in Sources */,
 				9F4598D02D2DDA2F002981C9 /* SpeechRecognizer.swift in Sources */,
 				9F45989C2D2DDA2A002981C9 /* AuthState.swift in Sources */,
+				9F4598EA2D3545BD002981C9 /* AdRewardManager.swift in Sources */,
+				9F4598DF2D33387B002981C9 /* CreditsView.swift in Sources */,
 				9F4598C62D2DDA2F002981C9 /* SettingsView.swift in Sources */,
 				9F4598CD2D2DDA2F002981C9 /* CameraView.swift in Sources */,
 				9F4598CB2D2DDA2F002981C9 /* CameraHUDOverlay.swift in Sources */,
@@ -733,10 +781,11 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ShootSolo/ShootSolo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"ShootSolo/Preview Content\"";
-				DEVELOPMENT_TEAM = F729H4D7P8;
+				DEVELOPMENT_TEAM = W924S6FGTJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShootSolo/Info.plist;
@@ -754,8 +803,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.productra.shootsolo;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.product.shootsolo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -768,10 +817,11 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ShootSolo/ShootSolo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"ShootSolo/Preview Content\"";
-				DEVELOPMENT_TEAM = F729H4D7P8;
+				DEVELOPMENT_TEAM = W924S6FGTJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShootSolo/Info.plist;
@@ -789,8 +839,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.productra.shootsolo;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.product.shootsolo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

@@ -1,0 +1,26 @@
+{
+  "identifier" : "com.yourapp.shootsolo",
+  "products" : [
+    {
+      "id" : "com.shootsolo.credits.20",
+      "type" : "consumable",
+      "price" : 1.99,
+      "displayPrice" : "$1.99",
+      "description" : "20 Recording Credits"
+    },
+    {
+      "id" : "com.shootsolo.credits.100",
+      "type" : "consumable",
+      "price" : 9.99,
+      "displayPrice" : "$9.99",
+      "description" : "100 Recording Credits"
+    },
+    {
+      "id" : "com.shootsolo.credits.400",
+      "type" : "consumable",
+      "price" : 29.99,
+      "displayPrice" : "$29.99",
+      "description" : "400 Recording Credits"
+    }
+  ]
+} 

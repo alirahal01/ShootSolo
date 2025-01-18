@@ -1,0 +1,115 @@
+{
+  "identifier" : "com.yourcompany.shootsolo",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "com.shootsolo.credits.20",
+      "localizations" : [
+        {
+          "description" : "20 Recording Credits",
+          "displayName" : "20 Credits Pack",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.shootsolo.credits.20",
+      "referenceName" : "20 Credits",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "9.99",
+      "familyShareable" : false,
+      "internalID" : "com.shootsolo.credits.100",
+      "localizations" : [
+        {
+          "description" : "100 Recording Credits",
+          "displayName" : "100 Credits Pack",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.shootsolo.credits.100",
+      "referenceName" : "100 Credits",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "29.99",
+      "familyShareable" : false,
+      "internalID" : "com.shootsolo.credits.400",
+      "localizations" : [
+        {
+          "description" : "400 Recording Credits",
+          "displayName" : "400 Credits Pack",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.shootsolo.credits.400",
+      "referenceName" : "400 Credits",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "com.yourcompany.shootsolo",
+    "_developerTeamID" : "YOUR_TEAM_ID",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 713961462.86452603,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

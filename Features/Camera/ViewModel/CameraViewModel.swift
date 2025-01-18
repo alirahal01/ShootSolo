@@ -3,6 +3,7 @@ import Combine
 import AVFoundation
 import SwiftUI
 
+@MainActor
 class CameraViewModel: ObservableObject {
     @Published var isRecording = false
     @Published var isGridEnabled = false
@@ -12,7 +13,8 @@ class CameraViewModel: ObservableObject {
     @Published var recordingTime: Int = 0
     @Published var showingSaveDialog = false
     @Published var timerText: String = "00:00"
-    @Published var creditCount = 0
+    @Published var creditCount: Int = 0
+    @Published var showingCreditsView = false
     
     var cameraManager: CameraManager
     private var recordingTimer: Timer?
@@ -25,30 +27,40 @@ class CameraViewModel: ObservableObject {
         
         // Bind camera manager's state to view model
         cameraManager.$isRecording
-            .receive(on: DispatchQueue.main)
+            .receive(on: RunLoop.main)
             .assign(to: &$isRecording)
+        
+        // Observe credits balance changes using Combine
+        CreditsManager.shared.$creditsBalance
+            .receive(on: RunLoop.main)
+            .assign(to: &$creditCount)
         
         // Set up speech recognizer command handling
         speechRecognizer.onCommandDetected = { [weak self] command in
-            switch command {
-            case "start":
-                self?.startRecording()
-            case "stop":
-                self?.stopRecording()
-            case "yes":
-                self?.saveTake()
-            case "no":
-                self?.discardTake()
-            default:
-                break
+            Task { @MainActor in
+                switch command {
+                case "start":
+                    await self?.startRecording()
+                case "stop":
+                    self?.stopRecording()
+                case "yes":
+                    self?.saveTake()
+                case "no":
+                    self?.discardTake()
+                default:
+                    break
+                }
             }
         }
     }
 
-    func startRecording() {
-        cameraManager.startRecording()
-        startTimer()
-        creditCount += 1
+    func startRecording() async {
+        if await CreditsManager.shared.useCredit() {
+            cameraManager.startRecording()
+            startTimer()
+        } else {
+            showingCreditsView = true
+        }
     }
     
     func stopRecording() {

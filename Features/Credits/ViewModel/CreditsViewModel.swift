@@ -1,19 +1,23 @@
 import Foundation
 import Combine
 
+@MainActor
 class CreditsViewModel: ObservableObject {
     @Published var credits: Int = 0
-//    private var creditsService: CreditsService
+    private var cancellables = Set<AnyCancellable>()
     
-//    init(creditsService: CreditsService = CreditsService()) {
-//        self.creditsService = creditsService
-//    }
-//    
-    func purchaseCredits(amount: Int) {
-        // Implement purchase logic
+    init() {
+        // Observe credits balance changes
+        CreditsManager.shared.$creditsBalance
+            .receive(on: RunLoop.main)
+            .assign(to: &$credits)
     }
     
-    func watchAdForCredits() {
-        // Implement rewarded ad logic
+    func purchaseCredits(amount: Int) async {
+        // Implementation will come from CreditsManager
+    }
+    
+    func watchAdForCredits() async {
+        await CreditsManager.shared.addFreeCredits()
     }
 } 

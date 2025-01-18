@@ -7,7 +7,7 @@ struct ContentView: View {
     @State private var isLoading: Bool = true
     @State private var showLoaderHUD: Bool = false
     @State private var showSuccessHUD: Bool = false
-    private var cameraViewModel = CameraViewModel()
+//    private var cameraViewModel = CameraViewModel()
     
     init() {
         FirebaseApp.configure()
@@ -20,7 +20,7 @@ struct ContentView: View {
 //                    LoadingView() 
                 } else if authState.isLoggedIn {
                     NavigationView {
-                        CameraView(viewModel: cameraViewModel)
+                        CameraView()
                             .padding([.top, .bottom], 16)
                             .edgesIgnoringSafeArea(.all)
                     }

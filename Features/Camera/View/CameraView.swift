@@ -6,10 +6,10 @@ struct CameraView: View {
     @StateObject private var viewModel: CameraViewModel
     @Environment(\.scenePhase) private var scenePhase
     
-    init(viewModel: CameraViewModel = CameraViewModel()) {
-        _viewModel = StateObject(wrappedValue: viewModel)
+    init() {
+        _viewModel = StateObject(wrappedValue: CameraViewModel())
     }
-
+    
     var body: some View {
         ZStack {
             // Camera Preview
@@ -59,7 +59,9 @@ struct CameraView: View {
                         isRecording: $viewModel.isRecording,
                         currentTake: $viewModel.currentTake,
                         startRecording: {
-                            viewModel.startRecording()
+                            Task {
+                                await viewModel.startRecording()
+                            }
                         },
                         stopRecording: viewModel.stopRecording,
                         switchCamera: viewModel.cameraManager.switchCamera
@@ -76,14 +78,14 @@ struct CameraView: View {
                                 .foregroundColor(.white)
                         }
                     }
-
+                    
                     Button(action: {
                         viewModel.isGridEnabled.toggle()
                     }) {
                         Image(systemName: viewModel.isGridEnabled ? "square.grid.2x2.fill" : "square.grid.2x2")
                             .foregroundColor(.white)
                     }
-
+                    
                     Button(action: {
                         viewModel.toggleFlash()
                     }) {
@@ -107,11 +109,16 @@ struct CameraView: View {
                         Text("Take \(viewModel.currentTake)")
                             .foregroundColor(.white)
                     } else {
-                        Text("Credits: \(viewModel.creditCount)")
-                            .foregroundColor(.white)
-                        
-                        Image(systemName: "plus.circle")
-                            .foregroundColor(.white)
+                        Button {
+                            viewModel.showingCreditsView = true
+                        } label: {
+                            HStack {
+                                Text("Credits: \(viewModel.creditCount)")
+                                    .foregroundColor(.white)
+                                Image(systemName: "plus.circle")
+                                    .foregroundColor(.white)
+                            }
+                        }
                     }
                 }
             }
@@ -134,6 +141,9 @@ struct CameraView: View {
                 viewModel.speechRecognizer.stopListening()
                 print("App moved to background/inactive, stopped listening") // Debug print
             }
+        }
+        .sheet(isPresented: $viewModel.showingCreditsView) {
+            CreditsView()
         }
     }
 }
