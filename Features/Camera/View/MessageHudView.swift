@@ -9,8 +9,10 @@ import Foundation
 import SwiftUI
 
 struct MessageHUDView: View {
+    @ObservedObject private var settingsManager = SettingsManager.shared
+    
     var body: some View {
-        Text("Ready to record.\nSay “HEY ACTION” to start,\n“HEY CUT” to stop.")
+        Text("Ready to record.\nSay \"\(settingsManager.settings.selectedStartKeyword.rawValue)\" to start,\n\"\(settingsManager.settings.selectedStopKeyword.rawValue)\" to stop.")
             .font(.system(size: 14))
             .foregroundColor(.white)
             .multilineTextAlignment(.center)
