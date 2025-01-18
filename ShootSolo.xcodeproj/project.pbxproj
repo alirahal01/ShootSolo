@@ -34,7 +34,6 @@
 		9F4598C82D2DDA2F002981C9 /* SettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598A52D2DDA2F002981C9 /* SettingsManager.swift */; };
 		9F4598C92D2DDA2F002981C9 /* CameraViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598A82D2DDA2F002981C9 /* CameraViewModel.swift */; };
 		9F4598CA2D2DDA2F002981C9 /* CameraModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598AA2D2DDA2F002981C9 /* CameraModel.swift */; };
-		9F4598CB2D2DDA2F002981C9 /* CameraHUDOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598AC2D2DDA2F002981C9 /* CameraHUDOverlay.swift */; };
 		9F4598CC2D2DDA2F002981C9 /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598AD2D2DDA2F002981C9 /* CameraPreviewView.swift */; };
 		9F4598CD2D2DDA2F002981C9 /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598AE2D2DDA2F002981C9 /* CameraView.swift */; };
 		9F4598CE2D2DDA2F002981C9 /* MessageHudView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598AF2D2DDA2F002981C9 /* MessageHudView.swift */; };
@@ -100,7 +99,6 @@
 		9F4598A52D2DDA2F002981C9 /* SettingsManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsManager.swift; sourceTree = "<group>"; };
 		9F4598A82D2DDA2F002981C9 /* CameraViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraViewModel.swift; sourceTree = "<group>"; };
 		9F4598AA2D2DDA2F002981C9 /* CameraModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraModel.swift; sourceTree = "<group>"; };
-		9F4598AC2D2DDA2F002981C9 /* CameraHUDOverlay.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraHUDOverlay.swift; sourceTree = "<group>"; };
 		9F4598AD2D2DDA2F002981C9 /* CameraPreviewView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
 		9F4598AE2D2DDA2F002981C9 /* CameraView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
 		9F4598AF2D2DDA2F002981C9 /* MessageHudView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MessageHudView.swift; sourceTree = "<group>"; };
@@ -326,7 +324,6 @@
 			isa = PBXGroup;
 			children = (
 				9F4598DB2D329F36002981C9 /* SpeechRecognizerStatusView.swift */,
-				9F4598AC2D2DDA2F002981C9 /* CameraHUDOverlay.swift */,
 				9F4598AD2D2DDA2F002981C9 /* CameraPreviewView.swift */,
 				9F4598AE2D2DDA2F002981C9 /* CameraView.swift */,
 				9F4598AF2D2DDA2F002981C9 /* MessageHudView.swift */,
@@ -613,7 +610,6 @@
 				9F4598DF2D33387B002981C9 /* CreditsView.swift in Sources */,
 				9F4598C62D2DDA2F002981C9 /* SettingsView.swift in Sources */,
 				9F4598CD2D2DDA2F002981C9 /* CameraView.swift in Sources */,
-				9F4598CB2D2DDA2F002981C9 /* CameraHUDOverlay.swift in Sources */,
 				9F4598DC2D329F36002981C9 /* SpeechRecognizerStatusView.swift in Sources */,
 				9F4598C82D2DDA2F002981C9 /* SettingsManager.swift in Sources */,
 				9F4598D22D2DDA2F002981C9 /* LoginViewModel.swift in Sources */,

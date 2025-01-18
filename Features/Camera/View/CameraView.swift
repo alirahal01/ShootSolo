@@ -52,7 +52,10 @@ struct CameraView: View {
                         .onChange(of: viewModel.zoomFactor) { newValue in
                             viewModel.setZoomFactor(newValue)
                         }
-                        .padding(.bottom, 20)
+                        .padding(.bottom, 10)
+                    
+                    MessageHUDView()
+                        .padding(.bottom, 10)
                     
                     // Bottom Controls
                     CameraBottomControls(

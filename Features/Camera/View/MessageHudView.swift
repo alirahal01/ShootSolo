@@ -15,7 +15,7 @@ struct MessageHUDView: View {
             .foregroundColor(.white)
             .multilineTextAlignment(.center)
             .padding()
-            .background(Color.black.opacity(0.8))
-            .cornerRadius(10)
+            .background(Color.black.opacity(0.35))
+            .cornerRadius(40)
     }
 }
