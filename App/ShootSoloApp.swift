@@ -18,6 +18,7 @@ struct ShootSoloApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(\.isStoreKitTest, ProcessInfo.processInfo.environment["STOREKIT_TEST"] == "1")
         }
     }
 } 

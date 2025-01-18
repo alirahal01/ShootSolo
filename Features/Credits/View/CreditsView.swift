@@ -5,7 +5,11 @@ struct CreditsView: View {
     @StateObject private var creditsManager = CreditsManager.shared
     @Environment(\.dismiss) private var dismiss
     @State private var showingError = false
-    @Environment(\.isStoreKitTest) private var isStoreKitTest
+    
+    // Debug info
+    #if DEBUG
+    @State private var isTestEnvironment = false
+    #endif
     
     var body: some View {
         VStack(spacing: 20) {
@@ -100,7 +104,7 @@ struct CreditsView: View {
             #if DEBUG
             // Debug info
             VStack {
-                Text("Environment: \(isStoreKitTest ? "Testing" : "Production")")
+                Text("Environment: \(isTestEnvironment ? "Testing" : "Production")")
                     .font(.caption)
                     .foregroundColor(.gray)
                 Text("Balance: \(creditsManager.creditsBalance)")
@@ -120,6 +124,11 @@ struct CreditsView: View {
         }
         .onAppear {
             #if DEBUG
+            // Check if we're running with StoreKit configuration
+            isTestEnvironment = Bundle.main.path(
+                forResource: "StoreKitConfig",
+                ofType: "storekit"
+            ) != nil
             print("Products available: \(creditsManager.products.map { $0.id })")
             #endif
         }

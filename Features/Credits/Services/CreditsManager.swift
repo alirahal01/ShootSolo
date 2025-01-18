@@ -57,7 +57,7 @@ class CreditsManager: ObservableObject {
         defer { isLoadingProducts = false }
         
         do {
-            let productIdentifiers = IAPProduct.allCases.map(\.rawValue)
+            let productIdentifiers = IAPProduct.allCases.map { $0.rawValue }
             print("Requesting products with IDs: \(productIdentifiers)")
             
             let storeProducts = try await Product.products(for: Set(productIdentifiers))
