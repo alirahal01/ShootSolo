@@ -74,7 +74,7 @@ struct CameraView: View {
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                HStack {
+                HStack(spacing: 15) {
                     if !viewModel.isRecording {
                         NavigationLink(destination: SettingsView()) {
                             Image(systemName: "gear")
@@ -85,7 +85,7 @@ struct CameraView: View {
                     Button(action: {
                         viewModel.isGridEnabled.toggle()
                     }) {
-                        Image(systemName: viewModel.isGridEnabled ? "square.grid.2x2.fill" : "square.grid.2x2")
+                        Image(systemName: viewModel.isGridEnabled ? "grid.circle.fill" : "grid.circle")
                             .foregroundColor(.white)
                     }
                     
