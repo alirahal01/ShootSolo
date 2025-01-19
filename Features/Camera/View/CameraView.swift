@@ -115,10 +115,10 @@ struct CameraView: View {
                         Button {
                             viewModel.showingCreditsView = true
                         } label: {
-                            HStack {
+                            HStack(spacing: 4) {
                                 Text("Credits: \(viewModel.creditCount)")
                                     .foregroundColor(.white)
-                                Image(systemName: "plus.circle")
+                                Image(systemName: "plus.square.fill")
                                     .foregroundColor(.white)
                             }
                         }
