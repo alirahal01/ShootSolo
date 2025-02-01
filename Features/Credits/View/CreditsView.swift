@@ -3,8 +3,10 @@ import StoreKit
 
 struct CreditsView: View {
     @StateObject private var creditsManager = CreditsManager.shared
+    @StateObject private var adViewModel = RewardedAdViewModel()
     @Environment(\.dismiss) private var dismiss
     @State private var showingError = false
+    @State private var isLoadingAd = false
     
     // Debug info
     #if DEBUG
@@ -82,15 +84,18 @@ struct CreditsView: View {
                 
                 // Free credits button
                 Button {
-                    Task {
-                        await creditsManager.addFreeCredits()
-                    }
+                    handleWatchAd()
                 } label: {
                     HStack {
                         Text("5 credits for FREE")
                             .bold()
                         Spacer()
-                        Text("Watch Ad")
+                        if isLoadingAd {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Text("Watch Ad")
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -98,6 +103,7 @@ struct CreditsView: View {
                     .foregroundColor(.white)
                     .cornerRadius(12)
                 }
+                .disabled(isLoadingAd)
                 .padding(.horizontal)
             }
             
@@ -131,6 +137,24 @@ struct CreditsView: View {
             ) != nil
             print("Products available: \(creditsManager.products.map { $0.id })")
             #endif
+        }
+    }
+    
+    private func handleWatchAd() {
+        isLoadingAd = true
+        
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootViewController = windowScene.windows.first?.rootViewController {
+            adViewModel.showAd(from: rootViewController) { success in
+                isLoadingAd = false
+                if success {
+                    Task {
+                        await creditsManager.addFreeCredits()
+                    }
+                }
+            }
+        } else {
+            isLoadingAd = false
         }
     }
 }

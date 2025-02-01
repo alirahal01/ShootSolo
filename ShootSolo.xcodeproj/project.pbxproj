@@ -50,10 +50,13 @@
 		9F4598DA2D2DDA2F002981C9 /* CreditsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598C42D2DDA2F002981C9 /* CreditsModel.swift */; };
 		9F4598DC2D329F36002981C9 /* SpeechRecognizerStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598DB2D329F36002981C9 /* SpeechRecognizerStatusView.swift */; };
 		9F4598DF2D33387B002981C9 /* CreditsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598DE2D33387B002981C9 /* CreditsView.swift */; };
-		9F4598E22D333883002981C9 /* CreditsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598E12D333883002981C9 /* CreditsManager.swift */; };
 		9F4598E42D333892002981C9 /* IAPProduct.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598E32D333892002981C9 /* IAPProduct.swift */; };
 		9F4598E72D341336002981C9 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9F4598E62D341336002981C9 /* StoreKit.framework */; };
-		9F4598EA2D3545BD002981C9 /* AdRewardManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4598E92D3545BD002981C9 /* AdRewardManager.swift */; };
+		9FC2A4EA2D4D7E500009C689 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 9FC2A4E92D4D7E500009C689 /* GoogleMobileAds */; };
+		9FC2A4EC2D4E56B90009C689 /* RewardedAdViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC2A4EB2D4E56B90009C689 /* RewardedAdViewModel.swift */; };
+		9FC2A4EE2D4E56CB0009C689 /* RewardedAdView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC2A4ED2D4E56CB0009C689 /* RewardedAdView.swift */; };
+		9FC2A4F22D4E99100009C689 /* CreditsManagerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC2A4F12D4E99100009C689 /* CreditsManagerProtocol.swift */; };
+		9FC2A4F62D4EA0150009C689 /* CreditsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC2A4F52D4EA0150009C689 /* CreditsManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -115,12 +118,14 @@
 		9F4598C42D2DDA2F002981C9 /* CreditsModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CreditsModel.swift; sourceTree = "<group>"; };
 		9F4598DB2D329F36002981C9 /* SpeechRecognizerStatusView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SpeechRecognizerStatusView.swift; path = Common/Components/SpeechRecognizerStatusView.swift; sourceTree = SOURCE_ROOT; };
 		9F4598DE2D33387B002981C9 /* CreditsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CreditsView.swift; sourceTree = "<group>"; };
-		9F4598E12D333883002981C9 /* CreditsManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CreditsManager.swift; sourceTree = "<group>"; };
 		9F4598E32D333892002981C9 /* IAPProduct.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IAPProduct.swift; sourceTree = "<group>"; };
 		9F4598E62D341336002981C9 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		9F4598E82D34133C002981C9 /* ShootSolo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShootSolo.entitlements; sourceTree = "<group>"; };
-		9F4598E92D3545BD002981C9 /* AdRewardManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = AdRewardManager.swift; path = Services/AdRewardManager.swift; sourceTree = "<group>"; };
 		9F4598EB2D355453002981C9 /* ShootSoloProducts.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = ShootSoloProducts.storekit; sourceTree = "<group>"; };
+		9FC2A4EB2D4E56B90009C689 /* RewardedAdViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardedAdViewModel.swift; sourceTree = "<group>"; };
+		9FC2A4ED2D4E56CB0009C689 /* RewardedAdView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardedAdView.swift; sourceTree = "<group>"; };
+		9FC2A4F12D4E99100009C689 /* CreditsManagerProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditsManagerProtocol.swift; sourceTree = "<group>"; };
+		9FC2A4F52D4EA0150009C689 /* CreditsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditsManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -132,6 +137,7 @@
 				9F4598E72D341336002981C9 /* StoreKit.framework in Frameworks */,
 				9F4598802D2DD713002981C9 /* GoogleSignInSwift in Frameworks */,
 				9F4598872D2DD7A9002981C9 /* FirebaseCrashlytics in Frameworks */,
+				9FC2A4EA2D4D7E500009C689 /* GoogleMobileAds in Frameworks */,
 				9F4598832D2DD7A9002981C9 /* FirebaseAnalytics in Frameworks */,
 				9F4598852D2DD7A9002981C9 /* FirebaseAuth in Frameworks */,
 				9F4598892D2DD7A9002981C9 /* FirebaseFirestore in Frameworks */,
@@ -389,7 +395,6 @@
 		9F4598C02D2DDA2F002981C9 /* Credits */ = {
 			isa = PBXGroup;
 			children = (
-				9F4598E92D3545BD002981C9 /* AdRewardManager.swift */,
 				9F4598E02D333883002981C9 /* Services */,
 				9F4598DD2D33387B002981C9 /* View */,
 				9F4598C12D2DDA2F002981C9 /* ViewModel */,
@@ -402,6 +407,7 @@
 		9F4598C12D2DDA2F002981C9 /* ViewModel */ = {
 			isa = PBXGroup;
 			children = (
+				9FC2A4EB2D4E56B90009C689 /* RewardedAdViewModel.swift */,
 				9F4598C22D2DDA2F002981C9 /* CreditsViewModel.swift */,
 			);
 			path = ViewModel;
@@ -410,6 +416,7 @@
 		9F4598C32D2DDA2F002981C9 /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				9FC2A4F12D4E99100009C689 /* CreditsManagerProtocol.swift */,
 				9F4598E32D333892002981C9 /* IAPProduct.swift */,
 				9F4598C42D2DDA2F002981C9 /* CreditsModel.swift */,
 			);
@@ -419,6 +426,7 @@
 		9F4598DD2D33387B002981C9 /* View */ = {
 			isa = PBXGroup;
 			children = (
+				9FC2A4ED2D4E56CB0009C689 /* RewardedAdView.swift */,
 				9F4598DE2D33387B002981C9 /* CreditsView.swift */,
 			);
 			path = View;
@@ -427,7 +435,7 @@
 		9F4598E02D333883002981C9 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				9F4598E12D333883002981C9 /* CreditsManager.swift */,
+				9FC2A4F52D4EA0150009C689 /* CreditsManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -463,6 +471,7 @@
 				9F4598842D2DD7A9002981C9 /* FirebaseAuth */,
 				9F4598862D2DD7A9002981C9 /* FirebaseCrashlytics */,
 				9F4598882D2DD7A9002981C9 /* FirebaseFirestore */,
+				9FC2A4E92D4D7E500009C689 /* GoogleMobileAds */,
 			);
 			productName = ShootSolo;
 			productReference = 9F4598482D2DD3A3002981C9 /* ShootSolo.app */;
@@ -539,6 +548,7 @@
 			packageReferences = (
 				9F45987C2D2DD713002981C9 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				9F4598812D2DD7A9002981C9 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				9FC2A4E82D4D7E500009C689 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 			);
 			productRefGroup = 9F4598492D2DD3A3002981C9 /* Products */;
 			projectDirPath = "";
@@ -587,17 +597,20 @@
 				9F4598CC2D2DDA2F002981C9 /* CameraPreviewView.swift in Sources */,
 				9F4598C52D2DDA2F002981C9 /* SettingsModel.swift in Sources */,
 				9F4598CF2D2DDA2F002981C9 /* CameraBottomControls.swift in Sources */,
+				9FC2A4F62D4EA0150009C689 /* CreditsManager.swift in Sources */,
 				9F4598992D2DDA2A002981C9 /* GridOverlay.swift in Sources */,
 				9F4598982D2DDA2A002981C9 /* HUDComponents.swift in Sources */,
 				9F4598952D2DDA2A002981C9 /* ZoomControlView.swift in Sources */,
-				9F4598E22D333883002981C9 /* CreditsManager.swift in Sources */,
 				9F4598D32D2DDA2F002981C9 /* UserModel.swift in Sources */,
 				9F4598D82D2DDA2F002981C9 /* AuthenticationService.swift in Sources */,
 				9F4598CA2D2DDA2F002981C9 /* CameraModel.swift in Sources */,
 				9F4598D42D2DDA2F002981C9 /* LoginView.swift in Sources */,
 				9F4598E42D333892002981C9 /* IAPProduct.swift in Sources */,
+				9FC2A4F22D4E99100009C689 /* CreditsManagerProtocol.swift in Sources */,
+				9FC2A4EE2D4E56CB0009C689 /* RewardedAdView.swift in Sources */,
 				9F4598DA2D2DDA2F002981C9 /* CreditsModel.swift in Sources */,
 				9F4598D12D2DDA2F002981C9 /* CameraManager.swift in Sources */,
+				9FC2A4EC2D4E56B90009C689 /* RewardedAdViewModel.swift in Sources */,
 				9F4598CE2D2DDA2F002981C9 /* MessageHudView.swift in Sources */,
 				9F45984C2D2DD3A3002981C9 /* ShootSoloApp.swift in Sources */,
 				9F4598D92D2DDA2F002981C9 /* CreditsViewModel.swift in Sources */,
@@ -606,7 +619,6 @@
 				9F4598C92D2DDA2F002981C9 /* CameraViewModel.swift in Sources */,
 				9F4598D02D2DDA2F002981C9 /* SpeechRecognizer.swift in Sources */,
 				9F45989C2D2DDA2A002981C9 /* AuthState.swift in Sources */,
-				9F4598EA2D3545BD002981C9 /* AdRewardManager.swift in Sources */,
 				9F4598DF2D33387B002981C9 /* CreditsView.swift in Sources */,
 				9F4598C62D2DDA2F002981C9 /* SettingsView.swift in Sources */,
 				9F4598CD2D2DDA2F002981C9 /* CameraView.swift in Sources */,
@@ -978,6 +990,14 @@
 				minimumVersion = 11.6.0;
 			};
 		};
+		9FC2A4E82D4D7E500009C689 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.13.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1010,6 +1030,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 9F4598812D2DD7A9002981C9 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
+		};
+		9FC2A4E92D4D7E500009C689 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9FC2A4E82D4D7E500009C689 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

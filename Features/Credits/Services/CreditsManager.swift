@@ -2,7 +2,7 @@ import Foundation
 import StoreKit
 
 @MainActor
-class CreditsManager: ObservableObject {
+class CreditsManager: ObservableObject, CreditsManagerProtocol {
     static let shared = CreditsManager()
     
     @Published private(set) var products: [ProductModel] = []
@@ -13,6 +13,7 @@ class CreditsManager: ObservableObject {
     
     private let userDefaults = UserDefaults.standard
     private let creditsKey = "user_credits_balance"
+    private let freeCreditsAmount = 5
     
     init() {
         creditsBalance = userDefaults.integer(forKey: creditsKey)
@@ -136,6 +137,8 @@ class CreditsManager: ObservableObject {
         }
     }
     
+    // MARK: - CreditsManagerProtocol
+    
     func addCredits(_ amount: Int) async {
         creditsBalance += amount
         userDefaults.set(creditsBalance, forKey: creditsKey)
@@ -149,8 +152,7 @@ class CreditsManager: ObservableObject {
     }
     
     func addFreeCredits() async {
-//        if await AdRewardManager.shared.showAd() {
-//            await addCredits(5)
-//        }
+        // Add free credits directly since the ad completion is handled in CreditsView
+        await addCredits(freeCreditsAmount)
     }
-} 
+}
