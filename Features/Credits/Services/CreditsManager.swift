@@ -28,7 +28,6 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
     
     private init(authService: AuthenticationService) {
         self.authService = authService
-        creditsBalance = userDefaults.integer(forKey: creditsKey)
         
         // Setup auth state listener
         setupAuthStateListener()
@@ -44,7 +43,6 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
         // Load products
         Task {
             await loadProducts()
-            try? await syncCreditsWithFirestore()
         }
     }
     
@@ -79,9 +77,9 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
             guard let self = self else { return }
             
             if user != nil {
-                // User is signed in, try to sync
+                // User is signed in, fetch credits
                 Task {
-                    try? await self.syncCreditsWithFirestore()
+                    try? await self.fetchCreditsFromFirestore()
                 }
             } else {
                 // User is signed out, handle locally
@@ -200,30 +198,38 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
         }
     }
     
-    func syncCreditsWithFirestore() async throws {
-        // First check if we have a Firebase user
-        guard Auth.auth().currentUser != nil else {
-            throw NSError(domain: "CreditsManager", 
-                         code: -1, 
-                         userInfo: [NSLocalizedDescriptionKey: "User not authenticated"])
-        }
-        
-        // Then check if we have the user ID from our service
+    func fetchCreditsFromFirestore() async throws {
         guard let userId = userId else {
             throw NSError(domain: "CreditsManager", 
                          code: -1, 
                          userInfo: [NSLocalizedDescriptionKey: "User ID not available"])
         }
         
-        // Check if token needs refresh
-        if let user = Auth.auth().currentUser {
-            do {
-                _ = try await user.getIDTokenResult(forcingRefresh: true)
-            } catch {
-                throw NSError(domain: "CreditsManager", 
-                            code: -1, 
-                            userInfo: [NSLocalizedDescriptionKey: "Failed to refresh authentication token"])
+        let userRef = db.collection("users").document(userId)
+        let document = try await userRef.getDocument()
+        
+        if document.exists {
+            if let credits = document.data()?["credits"] as? Int {
+                await MainActor.run {
+                    self.creditsBalance = credits
+                    self.userDefaults.set(credits, forKey: self.creditsKey)
+                }
             }
+        } else {
+            // If document doesn't exist, initialize with 0 credits
+            try await userRef.setData(["credits": 0])
+            await MainActor.run {
+                self.creditsBalance = 0
+                self.userDefaults.set(0, forKey: self.creditsKey)
+            }
+        }
+    }
+    
+    func syncCreditsWithFirestore() async throws {
+        guard let userId = userId else {
+            throw NSError(domain: "CreditsManager", 
+                         code: -1, 
+                         userInfo: [NSLocalizedDescriptionKey: "User ID not available"])
         }
         
         let userRef = db.collection("users").document(userId)

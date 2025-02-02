@@ -14,6 +14,8 @@ class AuthState: ObservableObject {
     private init() {
         setupAuthenticationListener()
         setupFirebaseAuthStateListener()
+        // Initialize isLoggedIn based on current auth state
+        isLoggedIn = Auth.auth().currentUser != nil
     }
     
     deinit {
@@ -26,9 +28,12 @@ class AuthState: ObservableObject {
         authStateHandler = Auth.auth().addStateDidChangeListener { [weak self] (auth, user) in
             guard let self = self else { return }
             
-            if let user = user {
-                // Check if user token is still valid
-                Task {
+            Task { @MainActor in
+                if let user = user {
+                    // User is logged in
+                    self.isLoggedIn = true
+                    
+                    // Check if user token is still valid
                     do {
                         _ = try await user.getIDToken(forcingRefresh: true)
                     } catch let error as NSError {
@@ -39,9 +44,13 @@ class AuthState: ObservableObject {
                             print("Firebase: User disabled or deleted")
                             await self.handleUserDisabled()
                         default:
+                            // Don't show the auth alert for other token refresh errors
                             print("Other Firebase error: \(error)")
                         }
                     }
+                } else {
+                    // User is logged out
+                    self.isLoggedIn = false
                 }
             }
         }
@@ -72,9 +81,12 @@ class AuthState: ObservableObject {
     @objc private func handleUnauthenticated() {
         print("Auth State: Handling unauthenticated state")
         Task { @MainActor in
-            self.isLoggedIn = false
-            self.showAuthAlert = true
-            print("Auth State: Alert should show - showAuthAlert: \(self.showAuthAlert)")
+            // Only show auth alert if we were previously logged in
+            if isLoggedIn {
+                self.isLoggedIn = false
+                self.showAuthAlert = true
+                print("Auth State: Alert should show - showAuthAlert: \(self.showAuthAlert)")
+            }
         }
     }
 } 

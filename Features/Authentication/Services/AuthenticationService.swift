@@ -38,6 +38,10 @@ class AuthenticationService: NSObject, ObservableObject, AuthenticationProtocol,
                 DispatchQueue.main.async {
                     self.user = user
                     self.isAuthenticated = true
+                    // Trigger credits sync when user signs in
+                    Task {
+                        try? await CreditsManager.shared.fetchCreditsFromFirestore()
+                    }
                 }
             } else {
                 // User is not authenticated, handle sign out
