@@ -7,7 +7,7 @@ class LoginViewModel: ObservableObject {
     @Published var user: UserModel?
     private var authService: AuthenticationService
     
-    init(authService: AuthenticationService = AuthenticationService()) {
+    init(authService: AuthenticationService = AuthenticationService.shared) {
         self.authService = authService
         checkLoginStatus()
     }

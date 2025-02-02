@@ -2,7 +2,7 @@ import Foundation
 // SettingsManager.swift
 //@MainActor
 class SettingsManager: ObservableObject {
-    static let shared = SettingsManager(authService: AuthenticationService())
+    static let shared = SettingsManager(authService: AuthenticationService.shared)
     
     @Published private(set) var settings: SettingsModel
     private let storage: SettingsPersistable
@@ -10,12 +10,11 @@ class SettingsManager: ObservableObject {
     
     private init(
         storage: SettingsPersistable = UserDefaultsSettingsStorage(),
-        authService: AuthenticationProtocol,
-        initialSettings: SettingsModel = SettingsModel.defaultSettings
+        authService: AuthenticationProtocol
     ) {
         self.storage = storage
         self.authService = authService
-        self.settings = initialSettings
+        self.settings = SettingsModel.defaultSettings
         loadSettings()
     }
     

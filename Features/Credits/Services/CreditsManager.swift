@@ -1,9 +1,11 @@
 import Foundation
 import StoreKit
+import FirebaseFirestore
+import FirebaseAuth
 
 @MainActor
 class CreditsManager: ObservableObject, CreditsManagerProtocol {
-    static let shared = CreditsManager()
+    static let shared = CreditsManager(authService: AuthenticationService.shared)
     
     @Published private(set) var products: [ProductModel] = []
     @Published var creditsBalance: Int = 0
@@ -15,8 +17,24 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
     private let creditsKey = "user_credits_balance"
     private let freeCreditsAmount = 5
     
-    init() {
+    private let db = Firestore.firestore()
+    private var authService: AuthenticationService
+    
+    private var authStateListener: AuthStateDidChangeListenerHandle?
+    
+    var userId: String? {
+        authService.user?.id
+    }
+    
+    private init(authService: AuthenticationService) {
+        self.authService = authService
         creditsBalance = userDefaults.integer(forKey: creditsKey)
+        
+        // Setup auth state listener
+        setupAuthStateListener()
+        
+        // Setup unauthenticated notification observer
+        setupUnauthenticatedObserver()
         
         // Start observing transactions
         Task {
@@ -26,6 +44,51 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
         // Load products
         Task {
             await loadProducts()
+            try? await syncCreditsWithFirestore()
+        }
+    }
+    
+    deinit {
+        if let listener = authStateListener {
+            Auth.auth().removeStateDidChangeListener(listener)
+        }
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    private func setupUnauthenticatedObserver() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleUnauthenticated),
+            name: .userDidBecomeUnauthenticated,
+            object: nil
+        )
+    }
+    
+    @objc private func handleUnauthenticated() {
+        // Reset local state
+        creditsBalance = 0
+        userDefaults.removeObject(forKey: creditsKey)
+        error = "Session expired. Please sign in again."
+        
+        // Optionally notify UI or handle any cleanup
+        objectWillChange.send()
+    }
+    
+    private func setupAuthStateListener() {
+        authStateListener = Auth.auth().addStateDidChangeListener { [weak self] (auth, user) in
+            guard let self = self else { return }
+            
+            if user != nil {
+                // User is signed in, try to sync
+                Task {
+                    try? await self.syncCreditsWithFirestore()
+                }
+            } else {
+                // User is signed out, handle locally
+                Task { @MainActor in
+                    self.handleUnauthenticated()
+                }
+            }
         }
     }
     
@@ -137,22 +200,71 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
         }
     }
     
+    func syncCreditsWithFirestore() async throws {
+        // First check if we have a Firebase user
+        guard Auth.auth().currentUser != nil else {
+            throw NSError(domain: "CreditsManager", 
+                         code: -1, 
+                         userInfo: [NSLocalizedDescriptionKey: "User not authenticated"])
+        }
+        
+        // Then check if we have the user ID from our service
+        guard let userId = userId else {
+            throw NSError(domain: "CreditsManager", 
+                         code: -1, 
+                         userInfo: [NSLocalizedDescriptionKey: "User ID not available"])
+        }
+        
+        // Check if token needs refresh
+        if let user = Auth.auth().currentUser {
+            do {
+                _ = try await user.getIDTokenResult(forcingRefresh: true)
+            } catch {
+                throw NSError(domain: "CreditsManager", 
+                            code: -1, 
+                            userInfo: [NSLocalizedDescriptionKey: "Failed to refresh authentication token"])
+            }
+        }
+        
+        let userRef = db.collection("users").document(userId)
+        try await userRef.setData(["credits": creditsBalance], merge: true)
+    }
+    
     // MARK: - CreditsManagerProtocol
     
     func addCredits(_ amount: Int) async {
         creditsBalance += amount
         userDefaults.set(creditsBalance, forKey: creditsKey)
+        
+        // Sync with Firestore
+        do {
+            try await syncCreditsWithFirestore()
+        } catch {
+            print("syncCreditsWithFirestore credits with Firestore: \(error)")
+            self.error = "Failed to sync credits: \(error.localizedDescription)"
+        }
     }
     
     func useCredit() async -> Bool {
         guard creditsBalance > 0 else { return false }
         creditsBalance -= 1
         userDefaults.set(creditsBalance, forKey: creditsKey)
-        return true
+        
+        // Sync with Firestore
+        do {
+            try await syncCreditsWithFirestore()
+            return true
+        } catch {
+            print("Failed to sync credits with Firestore: \(error)")
+            self.error = "Failed to sync credits: \(error.localizedDescription)"
+            // Revert the local change if sync fails
+            creditsBalance += 1
+            userDefaults.set(creditsBalance, forKey: creditsKey)
+            return false
+        }
     }
     
     func addFreeCredits() async {
-        // Add free credits directly since the ad completion is handled in CreditsView
         await addCredits(freeCreditsAmount)
     }
 }

@@ -13,6 +13,13 @@ struct SettingsView: View {
             accountSection
         }
         .navigationTitle("Settings")
+        .alert("Session Expired", isPresented: $authState.showAuthAlert) {
+            Button("Sign In") {
+                authState.isLoggedIn = false
+            }
+        } message: {
+            Text("Your session has expired. Please sign in again to continue.")
+        }
     }
     
     private var voiceCommandsSection: some View {

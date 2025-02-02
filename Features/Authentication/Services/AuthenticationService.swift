@@ -6,9 +6,67 @@ import FirebaseAuth
 import CryptoKit
 
 class AuthenticationService: NSObject, ObservableObject, AuthenticationProtocol, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+    static let shared = AuthenticationService()
+    
     @Published var user: UserModel?
     private var currentNonce: String?
     private var signInCompletion: ((Result<UserModel, Error>) -> Void)?
+    @Published var isAuthenticated = false
+    private var authStateListener: AuthStateDidChangeListenerHandle?
+    
+    private override init() {
+        super.init()
+        setupAuthStateListener()
+    }
+    
+    deinit {
+        if let listener = authStateListener {
+            Auth.auth().removeStateDidChangeListener(listener)
+        }
+    }
+    
+    private func setupAuthStateListener() {
+        authStateListener = Auth.auth().addStateDidChangeListener { [weak self] (auth, firebaseUser) in
+            guard let self = self else { return }
+            
+            if let firebaseUser = firebaseUser {
+                let user = UserModel(
+                    id: firebaseUser.uid,
+                    name: firebaseUser.displayName ?? "Unknown User",
+                    email: firebaseUser.email ?? "No Email"
+                )
+                DispatchQueue.main.async {
+                    self.user = user
+                    self.isAuthenticated = true
+                }
+            } else {
+                // User is not authenticated, handle sign out
+                Task { @MainActor in
+                    await self.handleUnauthenticated()
+                }
+            }
+        }
+    }
+    
+    @MainActor
+    private func handleUnauthenticated() async {
+        // Clear user data
+        self.user = nil
+        self.isAuthenticated = false
+        
+        // Attempt to sign out properly
+        do {
+            try await self.signOut()
+        } catch {
+            print("Error signing out: \(error)")
+        }
+        
+        // Post notification for other parts of the app
+        NotificationCenter.default.post(
+            name: .userDidBecomeUnauthenticated,
+            object: nil
+        )
+    }
     
     func signInWithGoogle(presentingViewController: UIViewController, completion: @escaping (Result<UserModel, Error>) -> Void) {
         guard let clientID = FirebaseApp.app()?.options.clientID else {
@@ -226,4 +284,9 @@ class AuthenticationService: NSObject, ObservableObject, AuthenticationProtocol,
         
         try await user.delete()
     }
+}
+
+// Add notification name
+extension Notification.Name {
+    static let userDidBecomeUnauthenticated = Notification.Name("userDidBecomeUnauthenticated")
 }

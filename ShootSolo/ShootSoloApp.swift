@@ -3,6 +3,8 @@ import GoogleMobileAds
 
 @main
 struct ShootSoloApp: App {
+    @StateObject private var authState = AuthState.shared
+    
     init() {
         
         // Initialize AdMob
@@ -21,6 +23,7 @@ struct ShootSoloApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(authState)
         }
     }
 }

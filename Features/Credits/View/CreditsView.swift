@@ -4,6 +4,7 @@ import StoreKit
 struct CreditsView: View {
     @StateObject private var creditsManager = CreditsManager.shared
     @StateObject private var adViewModel = RewardedAdViewModel()
+    @EnvironmentObject private var authState: AuthState
     @Environment(\.dismiss) private var dismiss
     @State private var showingError = false
     @State private var isLoadingAd = false
@@ -124,6 +125,14 @@ struct CreditsView: View {
             Button("OK") { }
         } message: {
             Text(creditsManager.error ?? "Unknown error")
+        }
+        .alert("Session Expired", isPresented: $authState.showAuthAlert) {
+            Button("Sign In") {
+                dismiss()
+                authState.isLoggedIn = false
+            }
+        } message: {
+            Text("Your session has expired. Please sign in again to continue.")
         }
         .onChange(of: creditsManager.error) { error in
             showingError = error != nil

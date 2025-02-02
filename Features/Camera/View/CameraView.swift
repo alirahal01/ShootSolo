@@ -5,6 +5,7 @@ import Photos
 struct CameraView: View {
     @StateObject private var viewModel: CameraViewModel
     @Environment(\.scenePhase) private var scenePhase
+    @EnvironmentObject private var authState: AuthState
     
     init() {
         _viewModel = StateObject(wrappedValue: CameraViewModel())
@@ -147,6 +148,13 @@ struct CameraView: View {
         }
         .sheet(isPresented: $viewModel.showingCreditsView) {
             CreditsView()
+        }
+        .alert("Session Expired", isPresented: $authState.showAuthAlert) {
+            Button("Sign In") {
+                authState.isLoggedIn = false
+            }
+        } message: {
+            Text("Your session has expired. Please sign in again to continue.")
         }
     }
 }
