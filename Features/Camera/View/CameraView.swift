@@ -150,7 +150,7 @@ struct CameraView: View {
             CreditsView()
         }
         .alert("Session Expired", isPresented: $authState.showAuthAlert) {
-            Button("Sign In") {
+            Button("Sign In", role: .destructive) {
                 authState.isLoggedIn = false
             }
         } message: {

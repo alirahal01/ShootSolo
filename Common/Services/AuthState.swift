@@ -1,12 +1,14 @@
 import Foundation
 import Combine
 
+
 @MainActor
 class AuthState: ObservableObject {
     static let shared = AuthState()
     
     @Published var isLoggedIn: Bool = false
     @Published var showAuthAlert = false
+    private let authService = AuthenticationService.shared
     
     private init() {
         setupAuthenticationListener()
@@ -22,7 +24,12 @@ class AuthState: ObservableObject {
     }
     
     @objc private func handleUnauthenticated() {
-        isLoggedIn = false
-        showAuthAlert = true
+        print("Auth State: Handling unauthenticated state") // Debug log
+        Task { @MainActor in
+            try? await authService.signOut()
+            self.isLoggedIn = false
+            self.showAuthAlert = true
+            print("Auth State: Alert should show - showAuthAlert: \(self.showAuthAlert)") // Debug log
+        }
     }
 } 

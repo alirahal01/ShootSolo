@@ -3,15 +3,11 @@ import Firebase
 import FirebaseAuth
 
 struct ContentView: View {
-    @StateObject private var authState = AuthState()
+    @EnvironmentObject private var authState: AuthState
     @State private var isLoading: Bool = true
     @State private var showLoaderHUD: Bool = false
     @State private var showSuccessHUD: Bool = false
 //    private var cameraViewModel = CameraViewModel()
-    
-    init() {
-        FirebaseApp.configure()
-    }
     
     var body: some View {
         ZStack {
@@ -51,7 +47,6 @@ struct ContentView: View {
         .onAppear {
             checkAuthState()
         }
-        .environmentObject(authState)
     }
     
     private func checkAuthState() {
@@ -66,4 +61,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environmentObject(AuthState.shared)
 }

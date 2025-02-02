@@ -1,13 +1,16 @@
 import SwiftUI
 import GoogleMobileAds
+import Firebase
 
 @main
 struct ShootSoloApp: App {
     @StateObject private var authState = AuthState.shared
     
     init() {
+        // Configure Firebase first
+        FirebaseApp.configure()
         
-        // Initialize AdMob
+        // Then initialize AdMob
         GADMobileAds.sharedInstance().start { status in
             print("AdMob initialization status: \(status.adapterStatusesByClassName)")
             print("🚀 Your test device ID: \(GADMobileAds.sharedInstance().requestConfiguration.testDeviceIdentifiers?.description ?? "Unknown")")
