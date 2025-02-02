@@ -40,7 +40,7 @@ struct SaveTakeDialog: View {
                     Text("Yes")
                         .frame(width: 100)
                         .padding()
-                        .background(Color.green)
+                        .background(Color.red)
                         .foregroundColor(.white)
                         .cornerRadius(8)
                 }
