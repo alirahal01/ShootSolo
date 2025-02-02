@@ -11,6 +11,8 @@ class CameraManager: NSObject, ObservableObject {
     private var currentPosition: AVCaptureDevice.Position = .back
     private var currentVideoUrl: URL?
     
+    private let settingsManager = SettingsManager.shared
+    
     override init() {
         super.init()
         checkPermissions()
@@ -169,6 +171,19 @@ class CameraManager: NSObject, ObservableObject {
         session.commitConfiguration()
     }
     
+    private func generateFileName() -> String {
+        let fileFormat = settingsManager.settings.fileNameFormat
+        
+        // If filename is empty or invalid, use default date format
+        if fileFormat.isEmpty {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
+            return "video_\(dateFormatter.string(from: Date())).mov"
+        }
+        
+        return fileFormat + ".mov"
+    }
+    
     func startRecording() {
         guard permissionGranted else { return }
         guard let videoOutput = videoOutput else {
@@ -177,7 +192,7 @@ class CameraManager: NSObject, ObservableObject {
         }
         
         let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-        let fileUrl = paths[0].appendingPathComponent("video_\(Date().timeIntervalSince1970).mov")
+        let fileUrl = paths[0].appendingPathComponent(generateFileName())
         currentVideoUrl = fileUrl
         
         // Start recording on a background queue

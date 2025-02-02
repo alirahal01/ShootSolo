@@ -4,11 +4,11 @@ struct SettingsView: View {
     @StateObject private var manager = SettingsManager.shared
     @State private var showingDeleteConfirmation = false
     @EnvironmentObject private var authState: AuthState
+    @State private var fileNameError: String?
     
     var body: some View {
         Form {
             voiceCommandsSection
-            videoSettingsSection
             generalSettingsSection
             accountSection
         }
@@ -38,26 +38,20 @@ struct SettingsView: View {
         }
     }
     
-    private var videoSettingsSection: some View {
-        Section(header: Text("Video Settings")) {
-            Picker("Resolution", selection: resolution) {
-                ForEach(VideoSettings.Resolution.allCases, id: \.self) { resolution in
-                    Text(resolution.rawValue).tag(resolution)
-                }
-            }
-            
-            Picker("Framerate", selection: framerate) {
-                ForEach(VideoSettings.Framerate.allCases, id: \.self) { framerate in
-                    Text(framerate.rawValue).tag(framerate)
-                }
-            }
-        }
-    }
-    
     private var generalSettingsSection: some View {
         Section(header: Text("General")) {
-            TextField("File Name Format", text: fileNameFormat)
-            TextField("Save Location", text: saveLocation)
+            TextField("File Name", text: fileNameFormat)
+                .onChange(of: fileNameFormat.wrappedValue) { newValue in
+                    validateFileName(newValue)
+                }
+            if let error = fileNameError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+            
+            Text("Gallery")
+                .foregroundColor(.gray)
         }
     }
     
@@ -109,28 +103,6 @@ struct SettingsView: View {
         )
     }
     
-    private var resolution: Binding<VideoSettings.Resolution> {
-        Binding(
-            get: { manager.settings.videoSettings.resolution },
-            set: { newValue in
-                var settings = manager.settings
-                settings.videoSettings.resolution = newValue
-                manager.updateSettings(settings)
-            }
-        )
-    }
-    
-    private var framerate: Binding<VideoSettings.Framerate> {
-        Binding(
-            get: { manager.settings.videoSettings.framerate },
-            set: { newValue in
-                var settings = manager.settings
-                settings.videoSettings.framerate = newValue
-                manager.updateSettings(settings)
-            }
-        )
-    }
-    
     private var fileNameFormat: Binding<String> {
         createBinding(for: \.fileNameFormat)
     }
@@ -148,5 +120,23 @@ struct SettingsView: View {
                 manager.updateSettings(settings)
             }
         )
+    }
+    
+    private func validateFileName(_ name: String) {
+        // Clear previous error
+        fileNameError = nil
+        
+        // Check if empty
+        if name.isEmpty {
+            fileNameError = "File name cannot be empty"
+            return
+        }
+        
+        // Check for invalid characters
+        let invalidCharacters = CharacterSet(charactersIn: "\\/:*?\"<>|")
+        if name.rangeOfCharacter(from: invalidCharacters) != nil {
+            fileNameError = "File name contains invalid characters"
+            return
+        }
     }
 }
