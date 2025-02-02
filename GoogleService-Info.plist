@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>726961038134-uo5saqk2s30bh85b8f0iq2s4uosgjvrp.apps.googleusercontent.com</string>
+	<string>726961038134-lr8r103u8g78b32vt5v4lkns5t0ds1r2.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.726961038134-uo5saqk2s30bh85b8f0iq2s4uosgjvrp</string>
+	<string>com.googleusercontent.apps.726961038134-lr8r103u8g78b32vt5v4lkns5t0ds1r2</string>
 	<key>API_KEY</key>
 	<string>AIzaSyD4zOkTKH7B-e3XP1JfZCeDYdMUM2-NC7g</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.productra.shootsolo</string>
+	<string>com.product.shootsolo</string>
 	<key>PROJECT_ID</key>
 	<string>shootsolo</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:726961038134:ios:303b3bfdc72286bae24997</string>
+	<string>1:726961038134:ios:413b4685387a242ce24997</string>
 </dict>
 </plist>

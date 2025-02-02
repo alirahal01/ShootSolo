@@ -3,9 +3,12 @@ import Firebase
 import GoogleSignIn
 import AuthenticationServices
 import FirebaseAuth
+import CryptoKit
 
-class AuthenticationService: NSObject, ObservableObject, AuthenticationProtocol {
+class AuthenticationService: NSObject, ObservableObject, AuthenticationProtocol, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
     @Published var user: UserModel?
+    private var currentNonce: String?
+    private var signInCompletion: ((Result<UserModel, Error>) -> Void)?
     
     func signInWithGoogle(presentingViewController: UIViewController, completion: @escaping (Result<UserModel, Error>) -> Void) {
         guard let clientID = FirebaseApp.app()?.options.clientID else {
@@ -69,12 +72,132 @@ class AuthenticationService: NSObject, ObservableObject, AuthenticationProtocol 
         }
     }
 
-
-    
     func signInWithApple(completion: @escaping (Result<UserModel, Error>) -> Void) {
-        // Placeholder for Sign in with Apple logic
-        // To be implemented: Handle ASAuthorizationAppleIDProvider flow
-        completion(.failure(NSError(domain: "com.yourApp.AppleSignIn", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sign in with Apple is not implemented yet."])))
+        self.signInCompletion = completion
+        let nonce = randomNonceString()
+        currentNonce = nonce
+        
+        let appleIDProvider = ASAuthorizationAppleIDProvider()
+        let request = appleIDProvider.createRequest()
+        request.requestedScopes = [.fullName, .email]
+        request.nonce = sha256(nonce)
+        
+        let authorizationController = ASAuthorizationController(authorizationRequests: [request])
+        authorizationController.delegate = self
+        authorizationController.presentationContextProvider = self
+        authorizationController.performRequests()
+    }
+    
+    // MARK: - ASAuthorizationControllerDelegate
+    
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+        guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
+              let nonce = currentNonce,
+              let appleIDToken = appleIDCredential.identityToken,
+              let idTokenString = String(data: appleIDToken, encoding: .utf8) else {
+            signInCompletion?(.failure(NSError(domain: "AppleSignIn", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unable to fetch identity token"])))
+            return
+        }
+        
+        let credential = OAuthProvider.credential(
+            withProviderID: "apple.com",
+            idToken: idTokenString,
+            rawNonce: nonce
+        )
+        
+        Auth.auth().signIn(with: credential) { [weak self] authResult, error in
+            if let error = error {
+                self?.signInCompletion?(.failure(error))
+                return
+            }
+            
+            guard let firebaseUser = authResult?.user else {
+                self?.signInCompletion?(.failure(NSError(domain: "AppleSignIn", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unable to create user"])))
+                return
+            }
+            
+            // Get user's name from the Apple ID credential
+            var displayName = firebaseUser.displayName ?? "Unknown User"
+            if let fullName = appleIDCredential.fullName {
+                displayName = [fullName.givenName, fullName.familyName]
+                    .compactMap { $0 }
+                    .joined(separator: " ")
+                
+                // Update Firebase display name if we got it from Apple
+                if !displayName.isEmpty {
+                    let changeRequest = firebaseUser.createProfileChangeRequest()
+                    changeRequest.displayName = displayName
+                    changeRequest.commitChanges(completion: nil)
+                }
+            }
+            
+            let userModel = UserModel(
+                id: firebaseUser.uid,
+                name: displayName,
+                email: firebaseUser.email ?? "No Email"
+            )
+            
+            DispatchQueue.main.async {
+                self?.user = userModel
+                self?.signInCompletion?(.success(userModel))
+            }
+        }
+    }
+    
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        signInCompletion?(.failure(error))
+    }
+    
+    // MARK: - ASAuthorizationControllerPresentationContextProviding
+    
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        guard let window = UIApplication.shared.windows.first else {
+            fatalError("No window found")
+        }
+        return window
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func randomNonceString(length: Int = 32) -> String {
+        precondition(length > 0)
+        let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        var result = ""
+        var remainingLength = length
+        
+        while remainingLength > 0 {
+            let randoms: [UInt8] = (0 ..< 16).map { _ in
+                var random: UInt8 = 0
+                let errorCode = SecRandomCopyBytes(kSecRandomDefault, 1, &random)
+                if errorCode != errSecSuccess {
+                    fatalError("Unable to generate nonce. SecRandomCopyBytes failed with OSStatus \(errorCode)")
+                }
+                return random
+            }
+            
+            randoms.forEach { random in
+                if remainingLength == 0 {
+                    return
+                }
+                
+                if random < charset.count {
+                    result.append(charset[Int(random)])
+                    remainingLength -= 1
+                }
+            }
+        }
+        
+        return result
+    }
+    
+    private func sha256(_ input: String) -> String {
+        let inputData = Data(input.utf8)
+        let hashedData = SHA256.hash(data: inputData)
+        let hashString = hashedData.compactMap {
+            String(format: "%02x", $0)
+        }.joined()
+        
+        return hashString
     }
     
     func signOut(completion: @escaping (Result<Void, Error>) -> Void) {
