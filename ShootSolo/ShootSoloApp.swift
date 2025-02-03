@@ -4,6 +4,7 @@ import Firebase
 
 @main
 struct ShootSoloApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var authState = AuthState.shared
     
     init() {
@@ -28,5 +29,12 @@ struct ShootSoloApp: App {
             ContentView()
                 .environmentObject(authState)
         }
+    }
+}
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        // Only allow landscape orientations
+        return .portrait
     }
 }
