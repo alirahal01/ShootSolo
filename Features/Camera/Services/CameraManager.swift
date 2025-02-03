@@ -13,6 +13,8 @@ class CameraManager: NSObject, ObservableObject {
     
     private let settingsManager = SettingsManager.shared
     
+    private var supportedZoomFactors: [CGFloat] = []
+    
     override init() {
         super.init()
         checkPermissions()
@@ -269,6 +271,37 @@ class CameraManager: NSObject, ObservableObject {
         }
     }
     
+    private func updateSupportedZoomFactors() {
+        guard let device = currentCamera else {
+            print("No camera device available for zoom factors")
+            return
+        }
+        
+        print("Updating zoom factors for device type: \(device.deviceType)")
+        
+        // Check if device supports ultra wide
+        if device.deviceType == .builtInUltraWideCamera {
+            // True ultra-wide camera available
+            supportedZoomFactors = [0.5, 1.0, 2.0]
+            print("Ultra wide camera detected, zoom factors: \(supportedZoomFactors)")
+        } else {
+            // For regular wide angle camera
+            let maxZoom = device.activeFormat.videoMaxZoomFactor
+            print("Regular camera detected, max zoom: \(maxZoom)")
+            
+            // Instead of trying to zoom out (which might not work),
+            // we'll use 1.0 as our widest view and zoom in for other options
+            supportedZoomFactors = [1.0, 1.5, 2.0]
+            print("Setting standard zoom factors: \(supportedZoomFactors)")
+        }
+        
+        // Ensure current zoom factor is valid
+        if let currentZoom = supportedZoomFactors.first {
+            setZoomFactor(currentZoom)
+            print("Set initial zoom factor to: \(currentZoom)")
+        }
+    }
+    
     func setZoomFactor(_ zoomFactor: CGFloat) {
         guard let device = currentCamera else {
             print("Camera device not available")
@@ -277,7 +310,31 @@ class CameraManager: NSObject, ObservableObject {
         
         do {
             try device.lockForConfiguration()
-            device.videoZoomFactor = max(1.0, min(zoomFactor, device.activeFormat.videoMaxZoomFactor))
+            
+            // Get the actual zoom factor based on device capabilities
+            let maxZoom = device.activeFormat.videoMaxZoomFactor
+            
+            // Calculate the actual zoom factor to apply
+            var actualZoom = zoomFactor
+            if device.deviceType != .builtInUltraWideCamera {
+                // For non-ultra-wide cameras, map the zoom factors differently
+                switch zoomFactor {
+                case 0.5: // When user selects "0.5x"
+                    actualZoom = 1.0  // Use no zoom
+                case 1.0: // When user selects "1x"
+                    actualZoom = 1.5  // Use slight zoom
+                case 2.0: // When user selects "2x"
+                    actualZoom = min(2.0, maxZoom)  // Use maximum zoom up to 2x
+                default:
+                    break
+                }
+            }
+            
+            // Clamp the zoom factor within device limits
+            let clampedZoom = max(1.0, min(actualZoom, maxZoom))
+            device.videoZoomFactor = clampedZoom
+            
+            print("Setting zoom factor: requested=\(zoomFactor), actual=\(clampedZoom)")
             device.unlockForConfiguration()
         } catch {
             print("Failed to set zoom factor: \(error.localizedDescription)")
