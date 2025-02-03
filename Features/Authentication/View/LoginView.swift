@@ -79,19 +79,25 @@ struct LoginView: View {
             Spacer()
             
             // Terms and Conditions
-            HStack {
-                Text("By using this app, you agree to")
-                    .font(.callout)
-                Button(action: {
-                    // Handle terms & conditions
-                }) {
+            VStack {
+                HStack(spacing: 0) {
+                    Text("By using this app, you agree to ")
+                        .font(.callout)
                     Text("terms & conditions")
                         .font(.callout)
                         .foregroundColor(.red)
+                        .onTapGesture {
+                            if let url = URL(string: "https://shootsolo.com/terms-and-conditions.html") {
+                                UIApplication.shared.open(url)
+                            }
+                        }
                 }
             }
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
             .padding(.top, 20)
             .padding(.bottom, 40)
+            .padding(.horizontal)
         }
         .padding()
     }
