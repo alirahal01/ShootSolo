@@ -96,6 +96,10 @@ class CameraManager: NSObject, ObservableObject {
             
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
                 self?.session.startRunning()
+                // Play ready sound on main thread after camera is set up
+                DispatchQueue.main.async {
+                    SoundManager.shared.playReadySound()
+                }
             }
         } catch {
             print("Failed to setup camera: \(error.localizedDescription)")
@@ -106,8 +110,9 @@ class CameraManager: NSObject, ObservableObject {
     private func setupAudioSession() {
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            // Remove any notification registration
-            try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
+            try audioSession.setCategory(.playAndRecord, 
+                                      mode: .default,
+                                      options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers])
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             print("Audio session setup failed: \(error)")
@@ -164,11 +169,18 @@ class CameraManager: NSObject, ObservableObject {
                     session.addInput(audioInput)
                 }
             }
+            
+            session.commitConfiguration()
+            
+            // Play ready sound after camera switch is complete
+            DispatchQueue.main.async {
+                SoundManager.shared.playReadySound()
+            }
+            
         } catch {
             print("Error switching cameras: \(error.localizedDescription)")
+            session.commitConfiguration()
         }
-        
-        session.commitConfiguration()
     }
     
     private func generateFileName() -> String {

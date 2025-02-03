@@ -56,6 +56,7 @@ class CameraViewModel: ObservableObject {
 
     func startRecording() async {
         if await CreditsManager.shared.useCredit() {
+            SoundManager.shared.playStartSound()
             cameraManager.startRecording()
             startTimer()
         } else {
@@ -64,32 +65,35 @@ class CameraViewModel: ObservableObject {
     }
     
     func stopRecording() {
-            speechRecognizer.stopListening()  // Stop camera context listening
-            cameraManager.stopRecording()
-            isRecording = false
-            stopTimer()
-            
-            // Start save dialog context listening before showing dialog
-            speechRecognizer.startListening(context: .saveDialog)
-            showingSaveDialog = true
-            
-            print("Recording stopped, showing save dialog")
-        }
+        SoundManager.shared.playStopSound()
+        speechRecognizer.stopListening()  // Stop camera context listening
+        cameraManager.stopRecording()
+        isRecording = false
+        stopTimer()
         
-        func saveTake() {
-            cameraManager.saveTake()
-            currentTake += 1
-            showingSaveDialog = false
-            // Start camera context listening after dialog closes
-            speechRecognizer.startListening(context: .camera)
-        }
+        // Start save dialog context listening before showing dialog
+        speechRecognizer.startListening(context: .saveDialog)
+        showingSaveDialog = true
         
-        func discardTake() {
-            cameraManager.discardTake()
-            showingSaveDialog = false
-            // Start camera context listening after dialog closes
-            speechRecognizer.startListening(context: .camera)
-        }
+        print("Recording stopped, showing save dialog")
+    }
+        
+    func saveTake() {
+        SoundManager.shared.playSaveTakeSound()  // Changed to use save take sound
+        cameraManager.saveTake()
+        currentTake += 1
+        showingSaveDialog = false
+        // Start camera context listening after dialog closes
+        speechRecognizer.startListening(context: .camera)
+    }
+    
+    func discardTake() {
+        SoundManager.shared.playStopSound()  // Play sound when discarding
+        cameraManager.discardTake()
+        showingSaveDialog = false
+        // Start camera context listening after dialog closes
+        speechRecognizer.startListening(context: .camera)
+    }
     
     func toggleFlash() {
         isFlashOn.toggle()

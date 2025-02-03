@@ -27,7 +27,10 @@ struct SaveTakeDialog: View {
             }
             
             HStack(spacing: 20) {
-                Button(action: onDiscard) {
+                Button(action: {
+                    SoundManager.shared.playStopSound()
+                    onDiscard()
+                }) {
                     Text("No")
                         .frame(width: 100)
                         .padding()
@@ -36,7 +39,10 @@ struct SaveTakeDialog: View {
                         .cornerRadius(8)
                 }
                 
-                Button(action: onSave) {
+                Button(action: {
+                    SoundManager.shared.playSaveTakeSound()
+                    onSave()
+                }) {
                     Text("Yes")
                         .frame(width: 100)
                         .padding()

@@ -57,6 +57,11 @@
 		9FC2A4EE2D4E56CB0009C689 /* RewardedAdView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC2A4ED2D4E56CB0009C689 /* RewardedAdView.swift */; };
 		9FC2A4F22D4E99100009C689 /* CreditsManagerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC2A4F12D4E99100009C689 /* CreditsManagerProtocol.swift */; };
 		9FC2A4F62D4EA0150009C689 /* CreditsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC2A4F52D4EA0150009C689 /* CreditsManager.swift */; };
+		9FC2A4FE2D50F9200009C689 /* blip_start.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 9FC2A4FA2D50F9200009C689 /* blip_start.mp3 */; };
+		9FC2A4FF2D50F9200009C689 /* blip_stop.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 9FC2A4FB2D50F9200009C689 /* blip_stop.mp3 */; };
+		9FC2A5002D50F9200009C689 /* save_take.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 9FC2A4FD2D50F9200009C689 /* save_take.mp3 */; };
+		9FC2A5012D50F9200009C689 /* ready_to_record.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 9FC2A4FC2D50F9200009C689 /* ready_to_record.mp3 */; };
+		9FC2A5032D50FD1D0009C689 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC2A5022D50FD1D0009C689 /* SoundManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -126,6 +131,11 @@
 		9FC2A4ED2D4E56CB0009C689 /* RewardedAdView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardedAdView.swift; sourceTree = "<group>"; };
 		9FC2A4F12D4E99100009C689 /* CreditsManagerProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditsManagerProtocol.swift; sourceTree = "<group>"; };
 		9FC2A4F52D4EA0150009C689 /* CreditsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditsManager.swift; sourceTree = "<group>"; };
+		9FC2A4FA2D50F9200009C689 /* blip_start.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = blip_start.mp3; sourceTree = "<group>"; };
+		9FC2A4FB2D50F9200009C689 /* blip_stop.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = blip_stop.mp3; sourceTree = "<group>"; };
+		9FC2A4FC2D50F9200009C689 /* ready_to_record.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = ready_to_record.mp3; sourceTree = "<group>"; };
+		9FC2A4FD2D50F9200009C689 /* save_take.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = save_take.mp3; sourceTree = "<group>"; };
+		9FC2A5022D50FD1D0009C689 /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -302,6 +312,7 @@
 		9F4598A62D2DDA2F002981C9 /* Camera */ = {
 			isa = PBXGroup;
 			children = (
+				9FC2A4F92D50F9130009C689 /* Sounds */,
 				9F4598A72D2DDA2F002981C9 /* ViewModel */,
 				9F4598A92D2DDA2F002981C9 /* Model */,
 				9F4598AB2D2DDA2F002981C9 /* View */,
@@ -341,6 +352,7 @@
 		9F4598B12D2DDA2F002981C9 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				9FC2A5022D50FD1D0009C689 /* SoundManager.swift */,
 				9F4598B22D2DDA2F002981C9 /* SpeechRecognizer.swift */,
 				9F4598B32D2DDA2F002981C9 /* CameraManager.swift */,
 			);
@@ -446,6 +458,17 @@
 				9F4598E62D341336002981C9 /* StoreKit.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		9FC2A4F92D50F9130009C689 /* Sounds */ = {
+			isa = PBXGroup;
+			children = (
+				9FC2A4FA2D50F9200009C689 /* blip_start.mp3 */,
+				9FC2A4FB2D50F9200009C689 /* blip_stop.mp3 */,
+				9FC2A4FC2D50F9200009C689 /* ready_to_record.mp3 */,
+				9FC2A4FD2D50F9200009C689 /* save_take.mp3 */,
+			);
+			path = Sounds;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -566,6 +589,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9FC2A4FE2D50F9200009C689 /* blip_start.mp3 in Resources */,
+				9FC2A4FF2D50F9200009C689 /* blip_stop.mp3 in Resources */,
+				9FC2A5002D50F9200009C689 /* save_take.mp3 in Resources */,
+				9FC2A5012D50F9200009C689 /* ready_to_record.mp3 in Resources */,
 				9F4598532D2DD3A4002981C9 /* Preview Assets.xcassets in Resources */,
 				9F4598502D2DD3A4002981C9 /* Assets.xcassets in Resources */,
 				9F4598782D2DD43D002981C9 /* GoogleService-Info.plist in Resources */,
@@ -598,6 +625,7 @@
 				9F4598C52D2DDA2F002981C9 /* SettingsModel.swift in Sources */,
 				9F4598CF2D2DDA2F002981C9 /* CameraBottomControls.swift in Sources */,
 				9FC2A4F62D4EA0150009C689 /* CreditsManager.swift in Sources */,
+				9FC2A5032D50FD1D0009C689 /* SoundManager.swift in Sources */,
 				9F4598992D2DDA2A002981C9 /* GridOverlay.swift in Sources */,
 				9F4598982D2DDA2A002981C9 /* HUDComponents.swift in Sources */,
 				9F4598952D2DDA2A002981C9 /* ZoomControlView.swift in Sources */,
