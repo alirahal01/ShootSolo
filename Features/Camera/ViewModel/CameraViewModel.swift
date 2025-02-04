@@ -79,7 +79,7 @@ class CameraViewModel: ObservableObject {
     }
         
     func saveTake() {
-        SoundManager.shared.playSaveTakeSound()  // Changed to use save take sound
+        // Removed sound play from here since it's now in SaveTakeDialog onAppear
         cameraManager.saveTake()
         currentTake += 1
         showingSaveDialog = false

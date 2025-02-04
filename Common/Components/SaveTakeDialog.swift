@@ -39,10 +39,7 @@ struct SaveTakeDialog: View {
                         .cornerRadius(8)
                 }
                 
-                Button(action: {
-                    SoundManager.shared.playSaveTakeSound()
-                    onSave()
-                }) {
+                Button(action: onSave) {
                     Text("Yes")
                         .frame(width: 100)
                         .padding()
@@ -56,6 +53,9 @@ struct SaveTakeDialog: View {
         .background(Color.white)
         .cornerRadius(16)
         .shadow(radius: 10)
+        .onAppear {
+            SoundManager.shared.playSaveTakeSound()
+        }
         .onDisappear {
             speechRecognizer.stopListening()
         }
