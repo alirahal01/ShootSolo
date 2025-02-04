@@ -27,10 +27,7 @@ struct SaveTakeDialog: View {
             }
             
             HStack(spacing: 20) {
-                Button(action: {
-                    SoundManager.shared.playStopSound()
-                    onDiscard()
-                }) {
+                Button(action: onDiscard) {
                     Text("No")
                         .frame(width: 100)
                         .padding()

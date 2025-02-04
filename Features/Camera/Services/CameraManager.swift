@@ -5,6 +5,7 @@ class CameraManager: NSObject, ObservableObject {
     @Published var session = AVCaptureSession()
     @Published var isRecording = false
     @Published var permissionGranted = false
+    @Published var isReady = false
     
     private var videoOutput: AVCaptureMovieFileOutput?
     private var currentCamera: AVCaptureDevice?
@@ -63,6 +64,7 @@ class CameraManager: NSObject, ObservableObject {
     private func setupCamera() {
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
             print("Failed to get camera device")
+            isReady = false
             return
         }
         currentCamera = device
@@ -75,6 +77,8 @@ class CameraManager: NSObject, ObservableObject {
                 session.addInput(input)
             } else {
                 print("Could not add video input")
+                isReady = false
+                return
             }
             
             // Add audio input
@@ -92,20 +96,22 @@ class CameraManager: NSObject, ObservableObject {
                 session.addOutput(videoOutput)
             } else {
                 print("Could not add video output")
+                isReady = false
+                return
             }
             
             session.commitConfiguration()
             
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
                 self?.session.startRunning()
-                // Play ready sound on main thread after camera is set up
                 DispatchQueue.main.async {
-                    SoundManager.shared.playReadySound()
+                    self?.isReady = true
                 }
             }
         } catch {
             print("Failed to setup camera: \(error.localizedDescription)")
             session.commitConfiguration()
+            isReady = false
         }
     }
     
@@ -140,6 +146,7 @@ class CameraManager: NSObject, ObservableObject {
     func switchCamera() {
         guard permissionGranted else { return }
         
+        isReady = false
         session.beginConfiguration()
         
         // Remove existing input
@@ -173,15 +180,14 @@ class CameraManager: NSObject, ObservableObject {
             }
             
             session.commitConfiguration()
-            
-            // Play ready sound after camera switch is complete
             DispatchQueue.main.async {
-                SoundManager.shared.playReadySound()
+                self.isReady = true
             }
             
         } catch {
             print("Error switching cameras: \(error.localizedDescription)")
             session.commitConfiguration()
+            isReady = false
         }
     }
     

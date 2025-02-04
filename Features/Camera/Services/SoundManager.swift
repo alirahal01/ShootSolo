@@ -43,10 +43,10 @@ class SoundManager {
     }
     
     func playReadySound() {
-           readySound?.play()
-       }
+        readySound?.play()
+    }
        
-       func playSaveTakeSound() {
-           saveTakeSound?.play()
-       }
+    func playSaveTakeSound() {
+        saveTakeSound?.play()
+    }
 }

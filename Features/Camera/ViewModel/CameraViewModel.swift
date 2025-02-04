@@ -79,20 +79,34 @@ class CameraViewModel: ObservableObject {
     }
         
     func saveTake() {
-        // Removed sound play from here since it's now in SaveTakeDialog onAppear
         cameraManager.saveTake()
         currentTake += 1
         showingSaveDialog = false
         // Start camera context listening after dialog closes
         speechRecognizer.startListening(context: .camera)
+        
+        // Add delay before playing ready sound
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1)) // Wait for success sound to finish
+            if cameraManager.isReady && !speechRecognizer.hasError {
+                SoundManager.shared.playReadySound()
+            }
+        }
     }
     
     func discardTake() {
-        SoundManager.shared.playStopSound()  // Play sound when discarding
         cameraManager.discardTake()
         showingSaveDialog = false
         // Start camera context listening after dialog closes
         speechRecognizer.startListening(context: .camera)
+        
+        // Add delay before playing ready sound
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1)) // Wait for trash sound to finish
+            if cameraManager.isReady && !speechRecognizer.hasError {
+                SoundManager.shared.playReadySound()
+            }
+        }
     }
     
     func toggleFlash() {
