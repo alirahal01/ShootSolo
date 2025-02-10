@@ -83,29 +83,29 @@ struct CreditsView: View {
                 
                 Spacer()
                 
-                // Free credits button
-                Button {
-                    handleWatchAd()
-                } label: {
-                    HStack {
-                        Text("5 credits for FREE")
-                            .bold()
-                        Spacer()
-                        if isLoadingAd {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Text("Watch Ad")
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                }
-                .disabled(isLoadingAd)
-                .padding(.horizontal)
+//                // Free credits button
+//                Button {
+//                    handleWatchAd()
+//                } label: {
+//                    HStack {
+//                        Text("5 credits for FREE")
+//                            .bold()
+//                        Spacer()
+//                        if isLoadingAd {
+//                            ProgressView()
+//                                .tint(.white)
+//                        } else {
+//                            Text("Watch Ad")
+//                        }
+//                    }
+//                    .frame(maxWidth: .infinity)
+//                    .padding()
+//                    .background(Color.green)
+//                    .foregroundColor(.white)
+//                    .cornerRadius(12)
+//                }
+//                .disabled(isLoadingAd)
+//                .padding(.horizontal)
             }
             
             #if DEBUG

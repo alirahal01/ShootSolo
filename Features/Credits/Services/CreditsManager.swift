@@ -15,7 +15,8 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
     
     private let userDefaults = UserDefaults.standard
     private let creditsKey = "user_credits_balance"
-    private let freeCreditsAmount = 20
+    private let freeCreditsAmount = 5
+    private let initialCreditsAmount = 20
     
     private let db = Firestore.firestore()
     private var authService: AuthenticationService
@@ -216,11 +217,14 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
                 }
             }
         } else {
-            // If document doesn't exist, initialize with 0 credits
-            try await userRef.setData(["credits": 0])
+            // If document doesn't exist, initialize with initialCreditsAmount
+            try await userRef.setData([
+                "credits": initialCreditsAmount,
+                "createdAt": FieldValue.serverTimestamp()
+            ])
             await MainActor.run {
-                self.creditsBalance = 0
-                self.userDefaults.set(0, forKey: self.creditsKey)
+                self.creditsBalance = initialCreditsAmount
+                self.userDefaults.set(initialCreditsAmount, forKey: self.creditsKey)
             }
         }
     }
