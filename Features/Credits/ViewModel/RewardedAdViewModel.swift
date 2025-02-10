@@ -1,5 +1,6 @@
 import Foundation
 import GoogleMobileAds
+import AppTrackingTransparency
 
 class RewardedAdViewModel: NSObject, ObservableObject, GADFullScreenContentDelegate {
     @Published var rewardedAd: GADRewardedAd?
@@ -17,7 +18,37 @@ class RewardedAdViewModel: NSObject, ObservableObject, GADFullScreenContentDeleg
             print("🎯 Test device ID configured: \(deviceId)")
         }
         #endif
-        loadAd()
+        
+        // Request tracking authorization after a short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            self?.requestTracking()
+        }
+    }
+    
+    private func requestTracking() {
+        if #available(iOS 14, *) {
+            ATTrackingManager.requestTrackingAuthorization { [weak self] status in
+                DispatchQueue.main.async {
+                    switch status {
+                    case .authorized:
+                        print("📱 Tracking authorization granted")
+                    case .denied:
+                        print("📱 Tracking authorization denied")
+                    case .restricted:
+                        print("📱 Tracking authorization restricted")
+                    case .notDetermined:
+                        print("📱 Tracking authorization not determined")
+                    @unknown default:
+                        print("📱 Unknown tracking authorization status")
+                    }
+                    // Load ad after tracking authorization response
+                    self?.loadAd()
+                }
+            }
+        } else {
+            // For iOS 13 and below, load ad directly
+            loadAd()
+        }
     }
     
     func loadAd() {
