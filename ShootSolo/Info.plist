@@ -2,33 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- AdMob App ID -->
-    <key>GADApplicationIdentifier</key>
-    <string>ca-app-pub-3940256099942544~1458002511</string>
-
-    <!-- (Optional) Ad Manager -->
-    <!-- <key>GADIsAdManagerApp</key>
-    <true/> -->
-
-    <!-- (Optional) iOS 14+ user tracking usage description -->
-    <key>NSUserTrackingUsageDescription</key>
-    <string>Your data will be used to deliver personalized ads.</string>
-
-    <!-- SKAdNetwork items required by Google -->
-    <key>SKAdNetworkItems</key>
-    <array>
-        <dict>
-            <key>SKAdNetworkIdentifier</key>
-            <string>cstr6suwn9.skadnetwork</string>
-        </dict>
-        <dict>
-            <key>SKAdNetworkIdentifier</key>
-            <string>4pfyvq9l8r.skadnetwork</string>
-        </dict>
-        <!-- ... Continue adding all Google (and mediation) SKAdNetwork IDs ... -->
-    </array>
-    <key>StoreKit Configuration</key>
-    <string>Configuration/ShootSoloProducts</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -42,5 +15,20 @@
 			</array>
 		</dict>
 	</array>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>4pfyvq9l8r.skadnetwork</string>
+		</dict>
+	</array>
+	<key>StoreKit Configuration</key>
+	<string>Configuration/ShootSoloProducts</string>
 </dict>
 </plist>
