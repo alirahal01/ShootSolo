@@ -15,7 +15,7 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
     
     private let userDefaults = UserDefaults.standard
     private let creditsKey = "user_credits_balance"
-    private let freeCreditsAmount = 5
+    private let freeCreditsAmount = 20
     
     private let db = Firestore.firestore()
     private var authService: AuthenticationService
