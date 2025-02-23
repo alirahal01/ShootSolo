@@ -76,6 +76,28 @@ struct LoginView: View {
             }
             .padding(.horizontal, 20)
             
+            // Separator
+            HStack {
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(.gray.opacity(0.3))
+                Text("OR")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(.gray.opacity(0.3))
+            }
+            .padding(.horizontal)
+            // Guest Button
+            Button(action: {
+                onLoginSuccess()
+            }) {
+                Text("Continue as Guest")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(.red)
+            }
+            
             Spacer()
             
             // Terms and Conditions
