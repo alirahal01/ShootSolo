@@ -277,4 +277,10 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
     func addFreeCredits() async {
         await addCredits(freeCreditsAmount)
     }
+    
+    func initializeGuestCredits() async {
+        // Set initial credits for guest users
+        creditsBalance = initialCreditsAmount // This is already 20
+        userDefaults.set(creditsBalance, forKey: creditsKey)
+    }
 }

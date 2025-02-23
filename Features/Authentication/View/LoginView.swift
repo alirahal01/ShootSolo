@@ -4,6 +4,7 @@ struct LoginView: View {
     @StateObject private var viewModel = LoginViewModel()
     var onLoginStart: () -> Void
     var onLoginSuccess: () -> Void
+    var showGuestOption: Bool = true
     
     var body: some View {
         VStack(spacing: 20) {
@@ -89,13 +90,17 @@ struct LoginView: View {
                     .foregroundColor(.gray.opacity(0.3))
             }
             .padding(.horizontal)
-            // Guest Button
-            Button(action: {
-                onLoginSuccess()
-            }) {
-                Text("Continue as Guest")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(.red)
+            
+            // Guest Button - Only show if showGuestOption is true
+            if showGuestOption {
+                Button(action: {
+                    AuthState.shared.continueAsGuest()
+                    onLoginSuccess()
+                }) {
+                    Text("Continue as Guest")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(.red)
+                }
             }
             
             Spacer()

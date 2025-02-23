@@ -8,6 +8,7 @@ class AuthState: ObservableObject {
     
     @Published var isLoggedIn: Bool = false
     @Published var showAuthAlert = false
+    @Published var isGuestUser: Bool = false
     private let authService = AuthenticationService.shared
     private var authStateHandler: AuthStateDidChangeListenerHandle?
     
@@ -32,6 +33,7 @@ class AuthState: ObservableObject {
                 if let user = user {
                     // User is logged in
                     self.isLoggedIn = true
+                    self.isGuestUser = false // Reset guest state when user logs in
                     
                     // Check if user token is still valid
                     do {
@@ -51,6 +53,7 @@ class AuthState: ObservableObject {
                 } else {
                     // User is logged out
                     self.isLoggedIn = false
+                    // Don't reset isGuestUser here as they might be a guest
                 }
             }
         }
@@ -88,5 +91,19 @@ class AuthState: ObservableObject {
                 print("Auth State: Alert should show - showAuthAlert: \(self.showAuthAlert)")
             }
         }
+    }
+    
+    func continueAsGuest() {
+        isGuestUser = true
+        isLoggedIn = true
+        // Initialize guest credits
+        Task {
+            await CreditsManager.shared.initializeGuestCredits()
+        }
+    }
+    
+    func signOut() {
+        isGuestUser = false
+        isLoggedIn = false
     }
 } 

@@ -6,8 +6,10 @@ struct CreditsView: View {
     @StateObject private var adViewModel = RewardedAdViewModel()
     @EnvironmentObject private var authState: AuthState
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.presentationMode) var presentationMode
     @State private var showingError = false
     @State private var isLoadingAd = false
+    @State private var showingLoginView = false
     
     // Debug info
     #if DEBUG
@@ -15,6 +17,54 @@ struct CreditsView: View {
     #endif
     
     var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 20) {
+                    creditsContent
+                }
+                .padding()
+            }
+            .navigationTitle("Credits")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .onAppear {
+            // Check if guest user and show login
+            if authState.isGuestUser {
+                showingLoginView = true
+            }
+            
+            #if DEBUG
+            // Check if we're running with StoreKit configuration
+            isTestEnvironment = Bundle.main.path(
+                forResource: "StoreKitConfig",
+                ofType: "storekit"
+            ) != nil
+            print("Products available: \(creditsManager.products.map { $0.id })")
+            #endif
+        }
+        .fullScreenCover(isPresented: $showingLoginView) {
+            LoginView(
+                onLoginStart: {},
+                onLoginSuccess: {
+                    showingLoginView = false
+                    // Refresh credits after login
+                    Task {
+                        try? await creditsManager.fetchCreditsFromFirestore()
+                    }
+                },
+                showGuestOption: false
+            )
+        }
+    }
+    
+    private var creditsContent: some View {
         VStack(spacing: 20) {
             // Header with close button
             HStack {
@@ -136,16 +186,6 @@ struct CreditsView: View {
         }
         .onChange(of: creditsManager.error) { error in
             showingError = error != nil
-        }
-        .onAppear {
-            #if DEBUG
-            // Check if we're running with StoreKit configuration
-            isTestEnvironment = Bundle.main.path(
-                forResource: "StoreKitConfig",
-                ofType: "storekit"
-            ) != nil
-            print("Products available: \(creditsManager.products.map { $0.id })")
-            #endif
         }
     }
     
