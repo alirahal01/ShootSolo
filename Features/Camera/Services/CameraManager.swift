@@ -61,7 +61,23 @@ class CameraManager: NSObject, ObservableObject {
         }
     }
     
+    private func setupAudioSession() {
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playAndRecord, 
+                                      mode: .videoRecording,
+                                      options: [.allowBluetooth, .mixWithOthers, .defaultToSpeaker])
+            try audioSession.setPreferredSampleRate(44100.0)
+            try audioSession.setPreferredIOBufferDuration(0.005)
+            try audioSession.setActive(true)
+        } catch {
+            print("Audio session setup failed: \(error)")
+        }
+    }
+    
     private func setupCamera() {
+        setupAudioSession()
+        
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
             print("Failed to get camera device")
             isReady = false
@@ -112,18 +128,6 @@ class CameraManager: NSObject, ObservableObject {
             print("Failed to setup camera: \(error.localizedDescription)")
             session.commitConfiguration()
             isReady = false
-        }
-    }
-    
-    private func setupAudioSession() {
-        do {
-            let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playAndRecord, 
-                                      mode: .default,
-                                      options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers])
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-        } catch {
-            print("Audio session setup failed: \(error)")
         }
     }
     

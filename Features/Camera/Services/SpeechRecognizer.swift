@@ -31,7 +31,10 @@ class SpeechRecognizer: NSObject, ObservableObject {
     private func setupAudioSession() {
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
+            try audioSession.setCategory(.playAndRecord,
+                                         mode: .videoRecording,
+                                       options: [.allowBluetooth, .mixWithOthers])
+            try audioSession.setPreferredIOBufferDuration(0.005)
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             print("Audio session setup failed: \(error)")
