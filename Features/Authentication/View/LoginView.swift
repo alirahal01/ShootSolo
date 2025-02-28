@@ -94,8 +94,12 @@ struct LoginView: View {
                 
                 // Guest Button
                 Button(action: {
-                    AuthState.shared.continueAsGuest()
-                    onLoginSuccess()
+                    Task {
+                        // Initialize guest state first
+                        await AuthState.shared.continueAsGuest()
+                        // Then trigger success callback
+                        onLoginSuccess()
+                    }
                 }) {
                     Text("Continue as Guest")
                         .font(.system(size: 17, weight: .medium))

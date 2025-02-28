@@ -15,6 +15,7 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
     
     private let userDefaults = UserDefaults.standard
     private let creditsKey = "user_credits_balance"
+    private let guestCreditsKey = "guest_credits_balance"
     private let freeCreditsAmount = 5
     private let initialCreditsAmount = 20
     
@@ -29,6 +30,15 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
     
     private init(authService: AuthenticationService) {
         self.authService = authService
+        
+        // Load existing credits on init
+        if AuthState.shared.isGuestUser {
+            if let guestCredits = userDefaults.object(forKey: guestCreditsKey) as? Int {
+                creditsBalance = guestCredits
+            } else {
+                creditsBalance = initialCreditsAmount
+            }
+        }
         
         // Setup auth state listener
         setupAuthStateListener()
@@ -83,9 +93,16 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
                     try? await self.fetchCreditsFromFirestore()
                 }
             } else {
-                // User is signed out, handle locally
+                // User is signed out, check if guest
                 Task { @MainActor in
-                    self.handleUnauthenticated()
+                    if AuthState.shared.isGuestUser {
+                        // Load guest credits
+                        if let guestCredits = self.userDefaults.object(forKey: self.guestCreditsKey) as? Int {
+                            self.creditsBalance = guestCredits
+                        }
+                    } else {
+                        self.handleUnauthenticated()
+                    }
                 }
             }
         }
@@ -258,19 +275,26 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
     func useCredit() async -> Bool {
         guard creditsBalance > 0 else { return false }
         creditsBalance -= 1
-        userDefaults.set(creditsBalance, forKey: creditsKey)
         
-        // Sync with Firestore
-        do {
-            try await syncCreditsWithFirestore()
+        // Save to appropriate storage based on user type
+        if AuthState.shared.isGuestUser {
+            userDefaults.set(creditsBalance, forKey: guestCreditsKey)
+            print("Updated guest credits: \(creditsBalance)")
             return true
-        } catch {
-            print("Failed to sync credits with Firestore: \(error)")
-            self.error = "Failed to sync credits: \(error.localizedDescription)"
-            // Revert the local change if sync fails
-            creditsBalance += 1
+        } else {
             userDefaults.set(creditsBalance, forKey: creditsKey)
-            return false
+            // Sync with Firestore for logged-in users
+            do {
+                try await syncCreditsWithFirestore()
+                return true
+            } catch {
+                print("Failed to sync credits with Firestore: \(error)")
+                self.error = "Failed to sync credits: \(error.localizedDescription)"
+                // Revert the local change if sync fails
+                creditsBalance += 1
+                userDefaults.set(creditsBalance, forKey: creditsKey)
+                return false
+            }
         }
     }
     
@@ -279,8 +303,15 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
     }
     
     func initializeGuestCredits() async {
-        // Set initial credits for guest users
-        creditsBalance = initialCreditsAmount // This is already 20
-        userDefaults.set(creditsBalance, forKey: creditsKey)
+        await MainActor.run {
+            // Only initialize if credits are not already set
+            if creditsBalance <= 0 {
+                creditsBalance = initialCreditsAmount
+                userDefaults.set(creditsBalance, forKey: guestCreditsKey)
+                print("Initialized new guest credits: \(creditsBalance)")
+            } else {
+                print("Using existing credits balance: \(creditsBalance)")
+            }
+        }
     }
 }

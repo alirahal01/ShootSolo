@@ -11,12 +11,16 @@ class AuthState: ObservableObject {
     @Published var isGuestUser: Bool = false
     private let authService = AuthenticationService.shared
     private var authStateHandler: AuthStateDidChangeListenerHandle?
+    private let userDefaults = UserDefaults.standard
+    private let guestStateKey = "is_guest_user"
     
     private init() {
+        // Load guest state
+        isGuestUser = userDefaults.bool(forKey: guestStateKey)
         setupAuthenticationListener()
         setupFirebaseAuthStateListener()
-        // Initialize isLoggedIn based on current auth state
-        isLoggedIn = Auth.auth().currentUser != nil
+        // Initialize isLoggedIn based on current auth state or guest state
+        isLoggedIn = Auth.auth().currentUser != nil || isGuestUser
     }
     
     deinit {
@@ -33,7 +37,8 @@ class AuthState: ObservableObject {
                 if let user = user {
                     // User is logged in
                     self.isLoggedIn = true
-                    self.isGuestUser = false // Reset guest state when user logs in
+                    self.isGuestUser = false
+                    self.userDefaults.removeObject(forKey: self.guestStateKey)
                     
                     // Check if user token is still valid
                     do {
@@ -51,9 +56,10 @@ class AuthState: ObservableObject {
                         }
                     }
                 } else {
-                    // User is logged out
-                    self.isLoggedIn = false
-                    // Don't reset isGuestUser here as they might be a guest
+                    // Only update login state if not a guest
+                    if !self.isGuestUser {
+                        self.isLoggedIn = false
+                    }
                 }
             }
         }
@@ -93,17 +99,26 @@ class AuthState: ObservableObject {
         }
     }
     
-    func continueAsGuest() {
-        isGuestUser = true
-        isLoggedIn = true
-        // Initialize guest credits
-        Task {
-            await CreditsManager.shared.initializeGuestCredits()
+    func continueAsGuest() async {
+        // Update state and UI immediately
+        await MainActor.run {
+            isGuestUser = true
+            isLoggedIn = true
+            userDefaults.set(true, forKey: guestStateKey)
+            
+            // Initialize credits immediately if they're zero
+            if CreditsManager.shared.creditsBalance <= 0 {
+                Task {
+                    await CreditsManager.shared.initializeGuestCredits()
+                }
+            }
         }
     }
     
     func signOut() {
         isGuestUser = false
         isLoggedIn = false
+        // Clear guest state
+        userDefaults.removeObject(forKey: guestStateKey)
     }
 } 
