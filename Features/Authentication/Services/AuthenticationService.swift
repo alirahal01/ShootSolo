@@ -288,6 +288,15 @@ class AuthenticationService: NSObject, ObservableObject, AuthenticationProtocol,
         
         try await user.delete()
     }
+
+    var currentUser: UserModel? {
+        guard let firebaseUser = Auth.auth().currentUser else { return nil }
+        return UserModel(
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName ?? "Unknown User",
+            email: firebaseUser.email ?? "No Email"
+        )
+    }
 }
 
 // Add notification name

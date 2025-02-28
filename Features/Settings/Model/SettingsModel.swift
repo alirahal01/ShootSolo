@@ -72,6 +72,7 @@ protocol SettingsPersistable {
 
 // AuthenticationProtocol.swift
 protocol AuthenticationProtocol {
+    var currentUser: UserModel? { get }
     func signOut() async throws
     func deleteAccount() async throws
 }

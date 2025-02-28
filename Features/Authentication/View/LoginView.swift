@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LoginView: View {
     @StateObject private var viewModel = LoginViewModel()
+    @Environment(\.dismiss) private var dismiss
     var onLoginStart: () -> Void
     var onLoginSuccess: () -> Void
     var showGuestOption: Bool = true
@@ -44,6 +45,7 @@ struct LoginView: View {
                         .first(where: { $0.isKeyWindow })?.rootViewController {
                         viewModel.loginWithGoogle(presentingViewController: rootVC) {
                             onLoginSuccess()
+                            dismiss()
                         }
                     } else {
                         print("Error: Unable to find root view controller.")
@@ -63,6 +65,7 @@ struct LoginView: View {
                     onLoginStart()
                     viewModel.loginWithApple {
                         onLoginSuccess()
+                        dismiss()
                     }
                 }) {
                     HStack {
@@ -77,6 +80,7 @@ struct LoginView: View {
             }
             .padding(.horizontal, 20)
             
+            // Only show guest option if showGuestOption is true
             if showGuestOption {
                 // Separator
                 HStack {
@@ -95,9 +99,7 @@ struct LoginView: View {
                 // Guest Button
                 Button(action: {
                     Task {
-                        // Initialize guest state first
                         await AuthState.shared.continueAsGuest()
-                        // Then trigger success callback
                         onLoginSuccess()
                     }
                 }) {

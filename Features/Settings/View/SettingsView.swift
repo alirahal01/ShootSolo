@@ -56,16 +56,41 @@ struct SettingsView: View {
     }
     
     private var accountSection: some View {
-        Section {
-            Button("Sign Out", role: .destructive) {
-                Task {
-                    try? await manager.signOut()
-                    authState.isLoggedIn = false
+        Section(header: Text("Account")) {
+            if authState.isGuestUser {
+                NavigationLink(destination: LoginView(
+                    onLoginStart: {},
+                    onLoginSuccess: { authState.isLoggedIn = true },
+                    showGuestOption: false
+                )) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Sign up / Login")
+                            .foregroundColor(.red)
+                        Text("to save and sync your credits across all your devices.")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
                 }
-            }
-            
-            Button("Delete Account", role: .destructive) {
-                showingDeleteConfirmation = true
+            } else {
+                if let email = manager.authService.currentUser?.email {
+                    HStack {
+                        Text("User")
+                        Spacer()
+                        Text(email)
+                            .foregroundColor(.gray)
+                    }
+                }
+                
+                Button("Sign Out", role: .destructive) {
+                    Task {
+                        try? await manager.signOut()
+                        authState.isLoggedIn = false
+                    }
+                }
+                
+                Button("Delete Account", role: .destructive) {
+                    showingDeleteConfirmation = true
+                }
             }
         }
         .alert("Delete Account", isPresented: $showingDeleteConfirmation) {

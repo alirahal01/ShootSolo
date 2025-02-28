@@ -6,7 +6,7 @@ class SettingsManager: ObservableObject {
     
     @Published private(set) var settings: SettingsModel
     private let storage: SettingsPersistable
-    private let authService: AuthenticationProtocol
+    let authService: AuthenticationProtocol
     
     private init(
         storage: SettingsPersistable = UserDefaultsSettingsStorage(),
