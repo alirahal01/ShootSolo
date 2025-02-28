@@ -9,7 +9,6 @@ struct SettingsView: View {
     var body: some View {
         Form {
             voiceCommandsSection
-            generalSettingsSection
             accountSection
         }
         .navigationTitle("Settings")
@@ -35,23 +34,6 @@ struct SettingsView: View {
                     Text(keyword.rawValue).tag(keyword)
                 }
             }
-        }
-    }
-    
-    private var generalSettingsSection: some View {
-        Section(header: Text("General")) {
-            TextField("File Name", text: fileNameFormat)
-                .onChange(of: fileNameFormat.wrappedValue) { newValue in
-                    validateFileName(newValue)
-                }
-            if let error = fileNameError {
-                Text(error)
-                    .font(.caption)
-                    .foregroundColor(.red)
-            }
-            
-            Text("Gallery")
-                .foregroundColor(.gray)
         }
     }
     
