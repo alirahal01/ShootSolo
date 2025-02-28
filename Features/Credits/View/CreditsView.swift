@@ -117,58 +117,20 @@ struct CreditsView: View {
                 }
                 .padding(.horizontal)
                 
-                // Separator
-                HStack {
-                    Rectangle()
-                        .frame(height: 1)
-                        .foregroundColor(.gray.opacity(0.3))
-                    Text("OR")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                    Rectangle()
-                        .frame(height: 1)
-                        .foregroundColor(.gray.opacity(0.3))
-                }
-                .padding(.horizontal)
-                
                 Spacer()
                 
-//                // Free credits button
-//                Button {
-//                    handleWatchAd()
-//                } label: {
-//                    HStack {
-//                        Text("5 credits for FREE")
-//                            .bold()
-//                        Spacer()
-//                        if isLoadingAd {
-//                            ProgressView()
-//                                .tint(.white)
-//                        } else {
-//                            Text("Watch Ad")
-//                        }
-//                    }
-//                    .frame(maxWidth: .infinity)
-//                    .padding()
-//                    .background(Color.green)
-//                    .foregroundColor(.white)
-//                    .cornerRadius(12)
-//                }
-//                .disabled(isLoadingAd)
-//                .padding(.horizontal)
+                #if DEBUG
+                // Debug info
+                VStack {
+                    Text("Environment: \(isTestEnvironment ? "Testing" : "Production")")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    Text("Balance: \(creditsManager.creditsBalance)")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+                #endif
             }
-            
-            #if DEBUG
-            // Debug info
-            VStack {
-                Text("Environment: \(isTestEnvironment ? "Testing" : "Production")")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-                Text("Balance: \(creditsManager.creditsBalance)")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            }
-            #endif
         }
         .padding(.vertical)
         .alert("Error", isPresented: $showingError) {
