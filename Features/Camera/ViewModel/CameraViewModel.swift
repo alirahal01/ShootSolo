@@ -127,28 +127,66 @@ class CameraViewModel: ObservableObject {
         cameraManager.setZoomFactor(factor)
     }
     
-    private func startTimer() {
+    func startTimer() {
         recordingTime = 0
-        recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self, self.isRecording else {
-                self?.recordingTimer?.invalidate()
-                return
+        updateTimerText()
+        stopTimer(resetText: false)
+        
+        // Create timer on the main thread
+        DispatchQueue.main.async { [weak self] in
+            self?.recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+                guard let self = self else { return }
+                
+                // Only increment if still recording
+                if self.isRecording {
+                    self.recordingTime += 1
+                    self.updateTimerText()
+                } else {
+                    self.stopTimer()
+                }
             }
-            self.recordingTime += 1
-            self.updateTimerText()
+            
+            // Make sure timer runs in common modes (works during scrolling etc)
+            self?.recordingTimer?.tolerance = 0.1
+            RunLoop.current.add(self?.recordingTimer ?? Timer(), forMode: .common)
         }
     }
     
-    private func stopTimer() {
-        recordingTimer?.invalidate()
-        recordingTimer = nil
-        recordingTime = 0
-        updateTimerText()
+    func stopTimer(resetText: Bool = true) {
+        // Invalidate on main thread
+        DispatchQueue.main.async { [weak self] in
+            self?.recordingTimer?.invalidate()
+            self?.recordingTimer = nil
+            if resetText {
+                self?.recordingTime = 0
+                self?.updateTimerText()
+            }
+        }
     }
     
     private func updateTimerText() {
-        let minutes = recordingTime / 60
-        let seconds = recordingTime % 60
-        timerText = String(format: "%02d:%02d", minutes, seconds)
+        // Guard against negative times
+        guard recordingTime >= 0 else {
+            timerText = "00:00:00"
+            return
+        }
+        
+        let hours = Int(recordingTime / 3600)
+        let minutes = Int((recordingTime % 3600) / 60)
+        let seconds = Int(recordingTime % 60)
+        
+        if hours > 0 {
+            // Show hours when recording exceeds 1 hour
+            timerText = String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        } else {
+            // Show only minutes and seconds when under 1 hour
+            timerText = String(format: "%02d:%02d", minutes, seconds)
+        }
+    }
+
+    deinit {
+        Task { @MainActor in
+            stopTimer()
+        }
     }
 } 

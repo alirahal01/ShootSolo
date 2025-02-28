@@ -104,11 +104,16 @@ struct CameraView: View {
                     SpeechRecognizerStatusView(speechRecognizer: viewModel.speechRecognizer, context: .camera).padding(.leading)
                     if viewModel.isRecording {
                         Text(viewModel.timerText)
-                            .font(.system(size: 18, weight: .bold))
-                            .padding(8)
-                            .background(Color.red)
+                            .font(.system(size: 18, weight: .bold, design: .monospaced))
+                            .monospacedDigit()
+                            .fixedSize()
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(
+                                Capsule()
+                                    .fill(Color.red)
+                            )
                             .foregroundColor(.white)
-                            .cornerRadius(5)
                         
                         Text("Take \(viewModel.currentTake)")
                             .foregroundColor(.white)
@@ -138,12 +143,17 @@ struct CameraView: View {
             print("CameraView disappeared, stopped listening") // Debug print
         }
         .onChange(of: scenePhase) { newPhase in
-            if newPhase == .active && !viewModel.showingSaveDialog {
-                viewModel.speechRecognizer.startListening(context: .camera)
-                print("App became active, started listening") // Debug print
+            if newPhase == .active {
+                if !viewModel.showingSaveDialog {
+                    viewModel.speechRecognizer.startListening(context: .camera)
+                }
+                // Only restart timer if was recording
+                if viewModel.isRecording {
+                    viewModel.startTimer()
+                }
             } else if newPhase == .background || newPhase == .inactive {
                 viewModel.speechRecognizer.stopListening()
-                print("App moved to background/inactive, stopped listening") // Debug print
+                viewModel.stopTimer()
             }
         }
         .sheet(isPresented: $viewModel.showingCreditsView) {
