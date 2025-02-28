@@ -54,6 +54,10 @@ class CameraViewModel: ObservableObject {
         }
     }
 
+    private var currentFileName: String {
+        FileNameGenerator.generateVideoFileName(takeNumber: currentTake)
+    }
+
     func startRecording() async {
         if await CreditsManager.shared.useCredit() {
             SoundManager.shared.playStartSound()
@@ -79,7 +83,7 @@ class CameraViewModel: ObservableObject {
     }
         
     func saveTake() {
-        cameraManager.saveTake()
+        cameraManager.saveTake(fileName: currentFileName)
         currentTake += 1
         showingSaveDialog = false
         // Start camera context listening after dialog closes

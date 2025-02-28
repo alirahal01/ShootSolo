@@ -237,7 +237,7 @@ class CameraManager: NSObject, ObservableObject {
         }
     }
     
-    func saveTake() {
+    func saveTake(fileName: String) {
         guard let videoUrl = currentVideoUrl else {
             print("No video URL available")
             return
@@ -248,15 +248,31 @@ class CameraManager: NSObject, ObservableObject {
             return
         }
         
-        // Ensure we're on the main thread for UI updates
+        // Create a new URL with the provided fileName
+        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        let destinationUrl = paths[0].appendingPathComponent(fileName)
+        
+        // First, try to move the file to the new location with the proper name
+        do {
+            if FileManager.default.fileExists(at: destinationUrl.path) {
+                try FileManager.default.removeItem(at: destinationUrl)
+            }
+            try FileManager.default.moveItem(at: videoUrl, to: destinationUrl)
+            currentVideoUrl = destinationUrl
+        } catch {
+            print("Error renaming video file: \(error.localizedDescription)")
+            // If rename fails, continue with original file
+        }
+        
+        // Save to photo library
         DispatchQueue.main.async {
             PHPhotoLibrary.shared().performChanges {
-                let request = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: videoUrl)
+                let request = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: self.currentVideoUrl!)
                 request?.creationDate = Date()
             } completionHandler: { [weak self] success, error in
                 DispatchQueue.main.async {
                     if success {
-                        print("Video saved successfully to gallery")
+                        print("Video saved successfully to gallery: \(fileName)")
                         self?.cleanupTempFile()
                     } else {
                         print("Error saving video: \(error?.localizedDescription ?? "Unknown error")")
