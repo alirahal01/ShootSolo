@@ -55,8 +55,11 @@ struct CameraView: View {
                         }
                         .padding(.bottom, 10)
                     
-                    MessageHUDView()
-                        .padding(.bottom, 10)
+                    MessageHUDView(
+                        speechRecognizer: viewModel.speechRecognizer,
+                        context: .camera
+                    )
+                    .padding(.bottom, 10)
                     
                     // Bottom Controls
                     CameraBottomControls(
@@ -101,7 +104,6 @@ struct CameraView: View {
             
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack {
-                    SpeechRecognizerStatusView(speechRecognizer: viewModel.speechRecognizer, context: .camera).padding(.leading)
                     if viewModel.isRecording {
                         Text(viewModel.timerText)
                             .font(.system(size: 18, weight: .bold, design: .monospaced))
