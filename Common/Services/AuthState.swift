@@ -116,9 +116,16 @@ class AuthState: ObservableObject {
     }
     
     func signOut() {
-        isGuestUser = false
-        isLoggedIn = false
-        // Clear guest state
-        userDefaults.removeObject(forKey: guestStateKey)
+        Task { @MainActor in
+            isGuestUser = false
+            isLoggedIn = false
+            // Clear guest state
+            userDefaults.removeObject(forKey: guestStateKey)
+            // Post notification for other parts of the app
+            NotificationCenter.default.post(
+                name: .userDidBecomeUnauthenticated,
+                object: nil
+            )
+        }
     }
 } 

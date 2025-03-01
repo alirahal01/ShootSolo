@@ -262,14 +262,23 @@ class AuthenticationService: NSObject, ObservableObject, AuthenticationProtocol,
         return hashString
     }
     
-    func signOut(completion: @escaping (Result<Void, Error>) -> Void) {
-        do {
-            try Auth.auth().signOut()
-            GIDSignIn.sharedInstance.signOut()
-            self.user = nil
-            completion(.success(()))
-        } catch let signOutError as NSError {
-            completion(.failure(signOutError))
+    func signOut() async throws {
+        return try await withCheckedThrowingContinuation { continuation in
+            do {
+                // Sign out from Firebase
+                try Auth.auth().signOut()
+                // Sign out from Google
+                GIDSignIn.sharedInstance.signOut()
+                
+                // Update state on main thread
+                DispatchQueue.main.async { [weak self] in
+                    self?.user = nil
+                    self?.isAuthenticated = false
+                    continuation.resume()
+                }
+            } catch {
+                continuation.resume(throwing: error)
+            }
         }
     }
 
@@ -277,10 +286,6 @@ class AuthenticationService: NSObject, ObservableObject, AuthenticationProtocol,
         return Auth.auth().currentUser != nil
     }
 
-    func signOut() async throws {
-        try Auth.auth().signOut()
-    }
-    
     func deleteAccount() async throws {
         guard let user = Auth.auth().currentUser else {
             throw NSError(domain: "No user logged in", code: 0, userInfo: nil)

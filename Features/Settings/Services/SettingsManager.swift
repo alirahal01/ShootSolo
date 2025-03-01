@@ -36,7 +36,14 @@ class SettingsManager: ObservableObject {
     }
     
     func signOut() async throws {
+        // First sign out from auth service
         try await authService.signOut()
+        
+        // Then update local state
+        await MainActor.run {
+            // Reset settings to default if needed
+            settings = SettingsModel.defaultSettings
+        }
     }
     
     func deleteAccount() async throws {

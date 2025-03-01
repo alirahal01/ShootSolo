@@ -65,8 +65,26 @@ struct SettingsView: View {
                 
                 Button("Sign Out", role: .destructive) {
                     Task {
-                        try? await manager.signOut()
-                        authState.isLoggedIn = false
+                        do {
+                            // First update UI state
+                            await MainActor.run {
+                                withAnimation {
+                                    authState.isLoggedIn = false
+                                    authState.isGuestUser = false  // Make sure to reset guest state
+                                }
+                            }
+                            
+                            // Then perform sign out
+                            try await manager.signOut()
+                        } catch {
+                            print("Sign out error: \(error)")
+                            // Revert UI state if sign out failed
+                            await MainActor.run {
+                                withAnimation {
+                                    authState.isLoggedIn = true
+                                }
+                            }
+                        }
                     }
                 }
                 
