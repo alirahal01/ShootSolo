@@ -59,6 +59,12 @@ class CameraViewModel: ObservableObject {
     }
 
     func startRecording() async {
+        // Guard against already recording state
+        guard !isRecording else {
+            print("Already recording, ignoring start command")
+            return
+        }
+        
         if await CreditsManager.shared.useCredit() {
             SoundManager.shared.playStartSound()
             cameraManager.startRecording()
