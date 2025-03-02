@@ -38,6 +38,10 @@ class SoundManager {
         startSound?.play()
     }
     
+    func getStartSoundDuration() -> TimeInterval {
+        return startSound?.duration ?? 0
+    }
+    
     func playStopSound() {
         stopSound?.play()
     }

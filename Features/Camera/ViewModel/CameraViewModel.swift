@@ -20,7 +20,7 @@ class CameraViewModel: ObservableObject {
     private var recordingTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
     var speechRecognizer: SpeechRecognizer
-
+    
     init(cameraManager: CameraManager = CameraManager()) {
         self.cameraManager = cameraManager
         self.speechRecognizer = SpeechRecognizer()
@@ -67,7 +67,16 @@ class CameraViewModel: ObservableObject {
         }
         
         if await CreditsManager.shared.useCredit() {
+            // Get sound duration first
+            let soundDuration = SoundManager.shared.getStartSoundDuration()
+            
+            // Play the sound
             SoundManager.shared.playStartSound()
+            
+            // Wait for sound to finish
+            try? await Task.sleep(for: .seconds(soundDuration))
+            
+            // Then start recording
             cameraManager.startRecording()
             startTimer()
         } else {
