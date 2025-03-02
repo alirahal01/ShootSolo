@@ -35,18 +35,19 @@ class CameraViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .assign(to: &$creditCount)
         
-        // Set up speech recognizer command handling
+        // Set up speech recognizer command handling with [weak self]
         speechRecognizer.onCommandDetected = { [weak self] command in
-            Task { @MainActor in
+            Task { [weak self] in
+                guard let self = self else { return }
                 switch command {
                 case "start":
-                    await self?.startRecording()
+                    await self.startRecording()
                 case "stop":
-                    self?.stopRecording()
+                    self.stopRecording()
                 case "yes":
-                    self?.saveTake()
+                    self.saveTake()
                 case "no":
-                    self?.discardTake()
+                    self.discardTake()
                 default:
                     break
                 }
@@ -95,10 +96,11 @@ class CameraViewModel: ObservableObject {
         // Start camera context listening after dialog closes
         speechRecognizer.startListening(context: .camera)
         
-        // Add delay before playing ready sound
-        Task { @MainActor in
+        // Add delay before playing ready sound - use [weak self]
+        Task { [weak self] in
+            guard let self = self else { return }
             try? await Task.sleep(for: .seconds(1)) // Wait for success sound to finish
-            if cameraManager.isReady && !speechRecognizer.hasError {
+            if self.cameraManager.isReady && !self.speechRecognizer.hasError {
                 SoundManager.shared.playReadySound()
             }
         }
@@ -110,10 +112,11 @@ class CameraViewModel: ObservableObject {
         // Start camera context listening after dialog closes
         speechRecognizer.startListening(context: .camera)
         
-        // Add delay before playing ready sound
-        Task { @MainActor in
+        // Add delay before playing ready sound - use [weak self]
+        Task { [weak self] in
+            guard let self = self else { return }
             try? await Task.sleep(for: .seconds(1)) // Wait for trash sound to finish
-            if cameraManager.isReady && !speechRecognizer.hasError {
+            if self.cameraManager.isReady && !self.speechRecognizer.hasError {
                 SoundManager.shared.playReadySound()
             }
         }
@@ -138,9 +141,11 @@ class CameraViewModel: ObservableObject {
         updateTimerText()
         stopTimer(resetText: false)
         
-        // Create timer on the main thread
+        // Create timer on the main thread - use [weak self]
         DispatchQueue.main.async { [weak self] in
-            self?.recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            
+            self.recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
                 guard let self = self else { return }
                 
                 // Only increment if still recording
@@ -153,19 +158,24 @@ class CameraViewModel: ObservableObject {
             }
             
             // Make sure timer runs in common modes (works during scrolling etc)
-            self?.recordingTimer?.tolerance = 0.1
-            RunLoop.current.add(self?.recordingTimer ?? Timer(), forMode: .common)
+            if let timer = self.recordingTimer {
+                timer.tolerance = 0.1
+                RunLoop.current.add(timer, forMode: .common)
+            }
         }
     }
     
     func stopTimer(resetText: Bool = true) {
-        // Invalidate on main thread
+        // Invalidate on main thread - use [weak self]
         DispatchQueue.main.async { [weak self] in
-            self?.recordingTimer?.invalidate()
-            self?.recordingTimer = nil
+            guard let self = self else { return }
+            
+            self.recordingTimer?.invalidate()
+            self.recordingTimer = nil
+            
             if resetText {
-                self?.recordingTime = 0
-                self?.updateTimerText()
+                self.recordingTime = 0
+                self.updateTimerText()
             }
         }
     }
@@ -191,8 +201,18 @@ class CameraViewModel: ObservableObject {
     }
 
     deinit {
-        Task { @MainActor in
-            stopTimer()
-        }
+        print("CameraViewModel deinit started")
+        
+        // Clear any remaining closures and clean up resources
+        speechRecognizer.onCommandDetected = nil
+        
+        // Cancel all subscriptions
+        cancellables.removeAll()
+        
+        // Stop timer and nil it out
+        recordingTimer?.invalidate()
+        recordingTimer = nil
+        
+        print("CameraViewModel deinit completed")
     }
-} 
+}

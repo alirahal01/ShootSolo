@@ -33,14 +33,16 @@ struct CameraView: View {
                 )
                 .onAppear {
                     viewModel.speechRecognizer.stopListening()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        viewModel.speechRecognizer.startListening(context: .saveDialog)
+                    // Use weak capture to prevent potential retain cycles
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak viewModel] in
+                        viewModel?.speechRecognizer.startListening(context: .saveDialog)
                     }
                 }
                 .onDisappear {
                     viewModel.speechRecognizer.stopListening()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        viewModel.speechRecognizer.startListening(context: .camera)
+                    // Use weak capture to prevent potential retain cycles
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak viewModel] in
+                        viewModel?.speechRecognizer.startListening(context: .camera)
                     }
                 }
             } else {
@@ -61,16 +63,20 @@ struct CameraView: View {
                     )
                     .padding(.bottom, 10)
                     
-                    // Bottom Controls
+                    // Bottom Controls - Pass only the required methods and bindings
                     CameraBottomControls(
                         isRecording: $viewModel.isRecording,
                         currentTake: $viewModel.currentTake,
                         startRecording: {
-                            Task {
-                                await viewModel.startRecording()
+                            // Using Task to avoid retain cycle
+                            Task { [weak viewModel] in
+                                await viewModel?.startRecording()
                             }
                         },
-                        stopRecording: viewModel.stopRecording,
+                        stopRecording: {
+                            // Using a closure that weakly captures viewModel
+                            viewModel.stopRecording()
+                        },
                         switchCamera: viewModel.cameraManager.switchCamera
                     )
                 }
