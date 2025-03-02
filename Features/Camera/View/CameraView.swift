@@ -144,10 +144,14 @@ struct CameraView: View {
             if !viewModel.showingSaveDialog {
                 viewModel.speechRecognizer.startListening(context: .camera)
             }
+            // Prevent screen from auto-locking
+            UIApplication.shared.isIdleTimerDisabled = true
             print("CameraView appeared, started listening") // Debug print
         }
         .onDisappear {
             viewModel.speechRecognizer.stopListening()
+            // Re-enable screen auto-locking
+            UIApplication.shared.isIdleTimerDisabled = false
             print("CameraView disappeared, stopped listening") // Debug print
         }
         .onChange(of: scenePhase) { newPhase in
