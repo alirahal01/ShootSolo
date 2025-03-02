@@ -19,7 +19,7 @@ struct SaveTakeDialog: View {
             } else {
                 HStack {
                     SpeechRecognizerStatusView(speechRecognizer: speechRecognizer, context: .saveDialog)
-                    Text("Listening for YES or NO...")
+                    Text(statusText)
                         .font(.headline)
                         .bold()
                         .foregroundColor(.gray)
@@ -55,6 +55,14 @@ struct SaveTakeDialog: View {
         }
         .onDisappear {
             speechRecognizer.stopListening()
+        }
+    }
+    
+    private var statusText: String {
+        if speechRecognizer.hasError {
+            return "<- Tap to refresh to start listening"
+        } else {
+            return "Listening for YES or NO..."
         }
     }
 }

@@ -19,7 +19,7 @@ struct MessageHUDView: View {
             SpeechRecognizerStatusView(speechRecognizer: speechRecognizer, context: context)
             
             // Command Instructions
-            Text("Say \"\(settingsManager.settings.selectedStartKeyword.rawValue)\" to start,\n\"\(settingsManager.settings.selectedStopKeyword.rawValue)\" to stop.")
+            Text(instructionText)
                 .font(.system(size: 14))
                 .foregroundColor(.white)
                 .multilineTextAlignment(.leading)
@@ -28,6 +28,14 @@ struct MessageHUDView: View {
         .padding(.vertical, 12)
         .background(Color.black.opacity(0.35))
         .cornerRadius(40)
+    }
+    
+    private var instructionText: String {
+        if speechRecognizer.hasError {
+            return "<- Tap to refresh to start listening"
+        } else {
+            return "Say \"\(settingsManager.settings.selectedStartKeyword.rawValue)\" to start,\n\"\(settingsManager.settings.selectedStopKeyword.rawValue)\" to stop."
+        }
     }
 }
 
