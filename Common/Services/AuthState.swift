@@ -12,7 +12,8 @@ class AuthState: ObservableObject {
     private let authService = AuthenticationService.shared
     private var authStateHandler: AuthStateDidChangeListenerHandle?
     private let userDefaults = UserDefaults.standard
-    private let guestStateKey = "is_guest_user"
+    private let guestStateKey = "isGuestUser"
+    private let guestCreditsInitializedKey = "guestCreditsInitialized"
     
     private init() {
         // Load guest state
@@ -100,17 +101,14 @@ class AuthState: ObservableObject {
     }
     
     func continueAsGuest() async {
-        // Update state and UI immediately
         await MainActor.run {
             isGuestUser = true
             isLoggedIn = true
             userDefaults.set(true, forKey: guestStateKey)
             
-            // Initialize credits immediately if they're zero
-            if CreditsManager.shared.creditsBalance <= 0 {
-                Task {
-                    await CreditsManager.shared.initializeGuestCredits()
-                }
+            // Initialize guest credits if needed
+            Task {
+                await CreditsManager.shared.initializeGuestCredits()
             }
         }
     }
@@ -119,7 +117,7 @@ class AuthState: ObservableObject {
         Task { @MainActor in
             isGuestUser = false
             isLoggedIn = false
-            // Clear guest state
+            // Clear guest state but NOT the credits initialized flag
             userDefaults.removeObject(forKey: guestStateKey)
             // Post notification for other parts of the app
             NotificationCenter.default.post(

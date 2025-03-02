@@ -63,6 +63,7 @@
 		9FC2A5012D50F9200009C689 /* ready_to_record.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 9FC2A4FC2D50F9200009C689 /* ready_to_record.mp3 */; };
 		9FC2A5032D50FD1D0009C689 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC2A5022D50FD1D0009C689 /* SoundManager.swift */; };
 		9FDE68282D72399100DEDDDB /* FileNameGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FDE68262D72399100DEDDDB /* FileNameGenerator.swift */; };
+		9FDE682A2D748CA600DEDDDB /* GuestCreditsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FDE68292D748CA600DEDDDB /* GuestCreditsManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -138,6 +139,7 @@
 		9FC2A4FD2D50F9200009C689 /* save_take.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = save_take.mp3; sourceTree = "<group>"; };
 		9FC2A5022D50FD1D0009C689 /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
 		9FDE68262D72399100DEDDDB /* FileNameGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileNameGenerator.swift; sourceTree = "<group>"; };
+		9FDE68292D748CA600DEDDDB /* GuestCreditsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuestCreditsManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -450,6 +452,7 @@
 		9F4598E02D333883002981C9 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				9FDE68292D748CA600DEDDDB /* GuestCreditsManager.swift */,
 				9FC2A4F52D4EA0150009C689 /* CreditsManager.swift */,
 			);
 			path = Services;
@@ -652,6 +655,7 @@
 				9FC2A4EC2D4E56B90009C689 /* RewardedAdViewModel.swift in Sources */,
 				9F4598CE2D2DDA2F002981C9 /* MessageHudView.swift in Sources */,
 				9F45984C2D2DD3A3002981C9 /* ShootSoloApp.swift in Sources */,
+				9FDE682A2D748CA600DEDDDB /* GuestCreditsManager.swift in Sources */,
 				9F4598D92D2DDA2F002981C9 /* CreditsViewModel.swift in Sources */,
 				9F4598D62D2DDA2F002981C9 /* LoadingHUD.swift in Sources */,
 				9F4598962D2DDA2A002981C9 /* SaveTakeDialog.swift in Sources */,

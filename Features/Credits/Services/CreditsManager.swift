@@ -2,6 +2,7 @@ import Foundation
 import StoreKit
 import FirebaseFirestore
 import FirebaseAuth
+import Security
 
 @MainActor
 class CreditsManager: ObservableObject, CreditsManagerProtocol {
@@ -24,6 +25,9 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
     
     private var authStateListener: AuthStateDidChangeListenerHandle?
     
+    private let deviceIdKey = "deviceUniqueId"
+    private let guestCreditsInitializedKey = "guestCreditsInitialized"
+    
     var userId: String? {
         authService.user?.id
     }
@@ -33,10 +37,14 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
         
         // Load existing credits on init
         if AuthState.shared.isGuestUser {
-            if let guestCredits = userDefaults.object(forKey: guestCreditsKey) as? Int {
-                creditsBalance = guestCredits
-            } else {
+            // Load saved guest credits if they exist
+            creditsBalance = userDefaults.integer(forKey: guestCreditsKey)
+            
+            // Only set initial credits if no credits exist AND device hasn't received initial credits
+            if creditsBalance == 0 && !hasReceivedInitialCredits() {
                 creditsBalance = initialCreditsAmount
+                userDefaults.set(creditsBalance, forKey: guestCreditsKey)
+                markInitialCreditsReceived()
             }
         }
         
@@ -302,16 +310,94 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
         await addCredits(freeCreditsAmount)
     }
     
+    private func getOrCreateDeviceId() -> String {
+        // Try to get existing device ID from Keychain
+        if let existingId = KeychainHelper.load(key: deviceIdKey) as? String {
+            return existingId
+        }
+        
+        // Create new device ID if none exists
+        let newId = UUID().uuidString
+        KeychainHelper.save(newId, key: deviceIdKey)
+        return newId
+    }
+    
+    private func hasReceivedInitialCredits() -> Bool {
+        let deviceId = getOrCreateDeviceId()
+        if let initializedDevices = KeychainHelper.load(key: guestCreditsInitializedKey) as? [String] {
+            return initializedDevices.contains(deviceId)
+        }
+        return false
+    }
+    
+    private func markInitialCreditsReceived() {
+        let deviceId = getOrCreateDeviceId()
+        
+        if var initializedDevices = KeychainHelper.load(key: guestCreditsInitializedKey) as? [String] {
+            if !initializedDevices.contains(deviceId) {
+                initializedDevices.append(deviceId)
+                KeychainHelper.save(initializedDevices, key: guestCreditsInitializedKey)
+            }
+        } else {
+            KeychainHelper.save([deviceId], key: guestCreditsInitializedKey)
+        }
+    }
+    
     func initializeGuestCredits() async {
         await MainActor.run {
-            // Only initialize if credits are not already set
-            if creditsBalance <= 0 {
+            // First check if there are any saved guest credits
+            let savedGuestCredits = userDefaults.integer(forKey: guestCreditsKey)
+            
+            if savedGuestCredits > 0 {
+                // Use existing guest credits if available
+                creditsBalance = savedGuestCredits
+                print("Restored existing guest credits: \(creditsBalance)")
+            } else if !hasReceivedInitialCredits() {
+                // Only give initial credits if device hasn't received them before
                 creditsBalance = initialCreditsAmount
                 userDefaults.set(creditsBalance, forKey: guestCreditsKey)
+                markInitialCreditsReceived()
                 print("Initialized new guest credits: \(creditsBalance)")
             } else {
-                print("Using existing credits balance: \(creditsBalance)")
+                // Device already received initial credits, use whatever is saved
+                creditsBalance = savedGuestCredits
+                print("Using existing guest credits: \(creditsBalance)")
             }
         }
+    }
+}
+
+// MARK: - KeychainHelper
+class KeychainHelper {
+    static func save(_ data: Any, key: String) {
+        if let encoded = try? NSKeyedArchiver.archivedData(withRootObject: data, requiringSecureCoding: false) {
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrAccount as String: key,
+                kSecValueData as String: encoded
+            ]
+            
+            SecItemDelete(query as CFDictionary)
+            SecItemAdd(query as CFDictionary, nil)
+        }
+    }
+    
+    static func load(key: String) -> Any? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key,
+            kSecReturnData as String: kCFBooleanTrue!,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        
+        var dataTypeRef: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &dataTypeRef)
+        
+        if status == errSecSuccess {
+            if let data = dataTypeRef as? Data {
+                return try? NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(data)
+            }
+        }
+        return nil
     }
 }
