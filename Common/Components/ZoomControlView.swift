@@ -34,6 +34,7 @@ struct ZoomControlView: View {
             }
         }
         .padding(.vertical, 5)
+        .padding(.horizontal, 15)
         .background(Color.black.opacity(0.3))
         .cornerRadius(20)
     }
