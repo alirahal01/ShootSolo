@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ZoomControlView: View {
     @Binding var zoomFactor: CGFloat
-    let zoomLevels: [CGFloat] = [1.0, 3.0] // Only 1x and 3x zoom
+    let zoomLevels: [CGFloat] = [1.0, 2.0] // Changed from 3.0 to 2.0
     
     // Add a namespace for matched geometry effect
     @Namespace private var animation
