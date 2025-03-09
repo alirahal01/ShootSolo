@@ -3,7 +3,7 @@ import StoreKit
 
 struct CreditsView: View {
     @StateObject private var creditsManager = CreditsManager.shared
-    @StateObject private var adViewModel = RewardedAdViewModel()
+    @StateObject private var adViewModel = RewardedAdViewModel.shared
     @EnvironmentObject private var authState: AuthState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.presentationMode) var presentationMode
@@ -48,6 +48,11 @@ struct CreditsView: View {
             ) != nil
             print("Products available: \(creditsManager.products.map { $0.id })")
             #endif
+            
+            // If there's no ad loaded and not currently loading, trigger a load
+            if adViewModel.rewardedAd == nil && !adViewModel.isLoading {
+                adViewModel.loadAd()
+            }
         }
         .fullScreenCover(isPresented: $showingLoginView) {
             LoginView(
@@ -114,6 +119,74 @@ struct CreditsView: View {
                             }
                         }
                     }
+                    
+                    // Add divider and "OR" text
+                    HStack {
+                        Rectangle()
+                            .frame(height: 1)
+                            .foregroundColor(.gray.opacity(0.3))
+                        Text("OR")
+                            .foregroundColor(.gray)
+                            .font(.subheadline)
+                        Rectangle()
+                            .frame(height: 1)
+                            .foregroundColor(.gray.opacity(0.3))
+                    }
+                    .padding(.vertical)
+                    
+                    // Watch Ad Button
+                    Button(action: handleWatchAd) {
+                        HStack {
+                            Text("5 credits for ")
+                                .foregroundColor(.white)
+                            Text("FREE")
+                                .bold()
+                                .foregroundColor(.white)
+                            Spacer()
+                            if isLoadingAd {
+                                // Show when ad is being presented
+                                ProgressView()
+                                    .tint(.white)
+                            } else if adViewModel.isLoading {
+                                // Show when next ad is loading
+                                HStack(spacing: 4) {
+                                    Text("Loading Next Ad")
+                                        .font(.subheadline)
+                                    ProgressView()
+                                        .tint(.white)
+                                }
+                            } else {
+                                HStack(spacing: 4) {
+                                    Text("Watch Ad")
+                                    Image(systemName: "play.circle.fill")
+                                        .font(.system(size: 20))
+                                }
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(
+                            Group {
+                                if adViewModel.isLoading {
+                                    Color.green.opacity(0.3) // Loading next ad - dimmed green
+                                } else if adViewModel.rewardedAd == nil {
+                                    Color.gray.opacity(0.5) // No ad available - gray
+                                } else {
+                                    Color.green // Ready to show - full green
+                                }
+                            }
+                        )
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                    }
+                    .disabled(adViewModel.rewardedAd == nil || isLoadingAd)
+                    
+                    if !adViewModel.lastFailureReason.userMessage.isEmpty {
+                        Text(adViewModel.lastFailureReason.userMessage)
+                            .font(.caption)
+                            .foregroundColor(.red)
+                            .padding(.top, 4)
+                    }
                 }
                 .padding(.horizontal)
                 
@@ -152,6 +225,7 @@ struct CreditsView: View {
     }
     
     private func handleWatchAd() {
+        guard !isLoadingAd else { return }
         isLoadingAd = true
         
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,

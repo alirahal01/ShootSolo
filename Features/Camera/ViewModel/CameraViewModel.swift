@@ -20,6 +20,7 @@ class CameraViewModel: ObservableObject {
     private var recordingTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
     var speechRecognizer: SpeechRecognizer
+    @StateObject private var adViewModel = RewardedAdViewModel.shared
     
     init(cameraManager: CameraManager = CameraManager()) {
         self.cameraManager = cameraManager
@@ -51,6 +52,14 @@ class CameraViewModel: ObservableObject {
                 default:
                     break
                 }
+            }
+        }
+        
+        // Start preloading ads when camera view model is initialized
+        Task { @MainActor in
+            // Ensure we have an ad ready when user runs out of credits
+            if adViewModel.rewardedAd == nil && !adViewModel.isLoading {
+                adViewModel.loadAd()
             }
         }
     }

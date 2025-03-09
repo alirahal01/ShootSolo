@@ -6,89 +6,151 @@ class RewardedAdViewModel: NSObject, ObservableObject, GADFullScreenContentDeleg
     @Published var rewardedAd: GADRewardedAd?
     @Published private(set) var isLoading = false
     @Published private(set) var error: String?
+    @Published private(set) var lastFailureReason: AdLoadFailureReason = .none
     
-    private let adUnitID = "ca-app-pub-3940256099942544/1712485313"
+    private let adUnitID: String = "ca-app-pub-3372761633164622/5636738003"
+    private var nextAd: GADRewardedAd?
     
-    override init() {
-        super.init()
-        #if DEBUG
-        print("🎯 Running in DEBUG mode")
-        print("🎯 Using test ad unit ID: \(adUnitID)")
-        if let deviceId = GADMobileAds.sharedInstance().requestConfiguration.testDeviceIdentifiers?.first {
-            print("🎯 Test device ID configured: \(deviceId)")
-        }
-        #endif
+    // Singleton instance for preloading
+    static let shared = RewardedAdViewModel()
+    
+    enum AdLoadFailureReason {
+        case none
+        case noConnection
+        case timeout
+        case noInventory
+        case rateLimit
+        case configuration
+        case other(String)
         
-        // Request tracking authorization after a short delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            self?.requestTracking()
+        var userMessage: String {
+            switch self {
+            case .none:
+                return ""
+            case .noConnection:
+                return "No internet connection. Please check your connection and try again."
+            case .timeout:
+                return "Request timed out. Please try again."
+            case .noInventory:
+                return "No ads available right now. Please try again later."
+            case .rateLimit:
+                return "Too many requests. Please wait a moment."
+            case .configuration:
+                return "Ad configuration error. Please try again later."
+            case .other(let message):
+                return message
+            }
         }
     }
     
-    private func requestTracking() {
-        if #available(iOS 14, *) {
-            ATTrackingManager.requestTrackingAuthorization { [weak self] status in
-                DispatchQueue.main.async {
-                    switch status {
-                    case .authorized:
-                        print("📱 Tracking authorization granted")
-                    case .denied:
-                        print("📱 Tracking authorization denied")
-                    case .restricted:
-                        print("📱 Tracking authorization restricted")
-                    case .notDetermined:
-                        print("📱 Tracking authorization not determined")
-                    @unknown default:
-                        print("📱 Unknown tracking authorization status")
-                    }
-                    // Load ad after tracking authorization response
-                    self?.loadAd()
+    override init() {
+        super.init()
+        
+        // Start loading immediately on init
+        GADMobileAds.sharedInstance().start { [weak self] status in
+            print("📢 AdMob SDK initialization complete: \(status.description)")
+            // Start loading both current and next ad
+            self?.preloadAds()
+        }
+    }
+    
+    private func preloadAds() {
+        // Load both current and next ad
+        loadAd()
+        loadNextAd()
+    }
+    
+    private func loadNextAd() {
+        let request = GADRequest()
+        
+        GADRewardedAd.load(withAdUnitID: adUnitID, request: request) { [weak self] ad, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("📢 Failed to load next ad: \(error.localizedDescription)")
+                    return
                 }
+                
+                self?.nextAd = ad
+                self?.nextAd?.fullScreenContentDelegate = self
+                print("📢 Next ad successfully preloaded")
             }
-        } else {
-            // For iOS 13 and below, load ad directly
-            loadAd()
         }
     }
     
     func loadAd() {
-        print("📢 Starting to load ad")
-        guard !isLoading else {
-            print("📢 Already loading, skipping")
+        guard !isLoading, rewardedAd == nil else { return }
+        
+        guard NetworkMonitor.shared.isConnected else {
+            self.lastFailureReason = .noConnection
             return
         }
         
         isLoading = true
         error = nil
+        lastFailureReason = .none
         
         let request = GADRequest()
-        print("📢 Creating GADRequest")
+        
+        // Add timeout
+        let timeout = DispatchWorkItem { [weak self] in
+            DispatchQueue.main.async {
+                if self?.isLoading == true {
+                    self?.isLoading = false
+                    self?.lastFailureReason = .timeout
+                }
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 30, execute: timeout)
         
         GADRewardedAd.load(withAdUnitID: adUnitID, request: request) { [weak self] ad, error in
-            print("📢 Ad load completion called")
+            timeout.cancel()
+            
             DispatchQueue.main.async {
                 self?.isLoading = false
                 
                 if let error = error {
-                    print("📢 Ad load error: \(error.localizedDescription)")
-                    self?.error = error.localizedDescription
+                    print("📢 Failed to load ad: \(error.localizedDescription)")
+                    
+                    // Categorize the error based on error description since GADRequestError is not available
+                    let errorDescription = error.localizedDescription.lowercased()
+                    if errorDescription.contains("no fill") {
+                        self?.lastFailureReason = .noInventory
+                    } else if errorDescription.contains("network") {
+                        self?.lastFailureReason = .noConnection
+                    } else if errorDescription.contains("invalid") {
+                        self?.lastFailureReason = .configuration
+                    } else {
+                        self?.lastFailureReason = .other(error.localizedDescription)
+                    }
+                    
+                    // Retry with exponential backoff
+                    self?.scheduleRetry()
                     return
                 }
                 
-                print("📢 Ad loaded successfully")
-                print("📢 Ad details - type: \(type(of: ad))")
-                
                 self?.error = nil
+                self?.lastFailureReason = .none
                 self?.rewardedAd = ad
                 self?.rewardedAd?.fullScreenContentDelegate = self
-                
-                // Verify delegate assignment
-                if self?.rewardedAd?.fullScreenContentDelegate != nil {
-                    print("📢 Delegate successfully assigned")
-                } else {
-                    print("⚠️ Warning: Delegate not assigned properly")
-                }
+                print("📢 Ad successfully preloaded")
             }
+        }
+    }
+    
+    private var retryCount = 0
+    private let maxRetries = 3
+    
+    private func scheduleRetry() {
+        guard retryCount < maxRetries else {
+            retryCount = 0
+            return
+        }
+        
+        let delay = pow(2.0, Double(retryCount)) // Exponential backoff: 2, 4, 8 seconds
+        retryCount += 1
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            self?.loadAd()
         }
     }
     
@@ -102,51 +164,24 @@ class RewardedAdViewModel: NSObject, ObservableObject, GADFullScreenContentDeleg
             return
         }
         
-        // Get the topmost view controller
         let topmostViewController = self.getTopmostViewController(from: viewController)
-        print("📢 [AD SHOW] Original ViewController type: \(type(of: viewController))")
-        print("📢 [AD SHOW] Topmost ViewController type: \(type(of: topmostViewController))")
         
-        // Check window state
-        if let window = topmostViewController.view.window {
-            print("✅ [AD SHOW] Window exists")
-            print("📢 [AD SHOW] Is key window: \(window.isKeyWindow)")
-        } else {
-            print("⚠️ [AD SHOW] No window found for view controller")
-        }
-        
-        // If there's a presented controller, dismiss it first
-        if let presentedVC = topmostViewController.presentedViewController {
-            print("⚠️ [AD SHOW] Found presented controller of type: \(type(of: presentedVC))")
-            print("📢 [AD SHOW] Dismissing current presentation before showing ad")
+        rewardedAd.present(fromRootViewController: topmostViewController) { [weak self] in
+            print("✅ [AD SHOW] Ad presented successfully")
             
-            topmostViewController.dismiss(animated: true) {
-                print("✅ [AD SHOW] Successfully dismissed previous controller")
-                self.presentAd(using: rewardedAd, from: topmostViewController, completion: completion)
-            }
-        } else {
-            print("✅ [AD SHOW] No presented controller found, showing ad directly")
-            self.presentAd(using: rewardedAd, from: topmostViewController, completion: completion)
-        }
-    }
-
-    private func presentAd(using ad: GADRewardedAd, from viewController: UIViewController, completion: @escaping (Bool) -> Void) {
-        print("📢 [AD PRESENT] Attempting to present ad")
-        print("📢 [AD PRESENT] Presenting from VC type: \(type(of: viewController))")
-        
-        ad.present(fromRootViewController: viewController) { [weak self] in
-            print("📢 [AD PRESENT] Ad presentation callback triggered")
-            
-            if let reward = self?.rewardedAd?.adReward {
-                print("✅ [AD PRESENT] Reward received:")
-                print("   - Amount: \(reward.amount)")
-                print("   - Type: \(reward.type)")
-                completion(true)
+            // Move next ad to current if available
+            if let nextAd = self?.nextAd {
+                self?.rewardedAd = nextAd
+                self?.nextAd = nil
+                // Start loading new next ad
+                self?.loadNextAd()
             } else {
-                print("❌ [AD PRESENT] No reward received")
-                self?.error = "Failed to receive reward"
-                completion(false)
+                // If no next ad, clear current and start loading new one
+                self?.rewardedAd = nil
+                self?.loadAd()
             }
+            
+            completion(true)
         }
     }
 
@@ -202,8 +237,16 @@ class RewardedAdViewModel: NSObject, ObservableObject, GADFullScreenContentDeleg
     // MARK: - GADFullScreenContentDelegate
     func adDidDismissFullScreenContent(_ ad: GADFullScreenPresentingAd) {
         print("📢 Ad dismissed")
-        rewardedAd = nil
-        loadAd() // Preload next ad
+        
+        // If we don't have a next ad ready, start loading one
+        if nextAd == nil && rewardedAd == nil {
+            loadAd()
+        }
+        
+        // Always ensure we're loading the next ad
+        if nextAd == nil {
+            loadNextAd()
+        }
     }
     
     func ad(_ ad: GADFullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {

@@ -64,6 +64,7 @@
 		9FC2A5032D50FD1D0009C689 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC2A5022D50FD1D0009C689 /* SoundManager.swift */; };
 		9FDE68282D72399100DEDDDB /* FileNameGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FDE68262D72399100DEDDDB /* FileNameGenerator.swift */; };
 		9FDE682A2D748CA600DEDDDB /* GuestCreditsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FDE68292D748CA600DEDDDB /* GuestCreditsManager.swift */; };
+		9FDE682E2D7E216000DEDDDB /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FDE682D2D7E216000DEDDDB /* NetworkMonitor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -140,6 +141,7 @@
 		9FC2A5022D50FD1D0009C689 /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
 		9FDE68262D72399100DEDDDB /* FileNameGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileNameGenerator.swift; sourceTree = "<group>"; };
 		9FDE68292D748CA600DEDDDB /* GuestCreditsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuestCreditsManager.swift; sourceTree = "<group>"; };
+		9FDE682D2D7E216000DEDDDB /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -263,6 +265,7 @@
 		9F4598932D2DDA2A002981C9 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				9FDE682D2D7E216000DEDDDB /* NetworkMonitor.swift */,
 				9F4598942D2DDA2A002981C9 /* AuthState.swift */,
 			);
 			path = Services;
@@ -651,6 +654,7 @@
 				9FC2A4F22D4E99100009C689 /* CreditsManagerProtocol.swift in Sources */,
 				9FC2A4EE2D4E56CB0009C689 /* RewardedAdView.swift in Sources */,
 				9F4598DA2D2DDA2F002981C9 /* CreditsModel.swift in Sources */,
+				9FDE682E2D7E216000DEDDDB /* NetworkMonitor.swift in Sources */,
 				9F4598D12D2DDA2F002981C9 /* CameraManager.swift in Sources */,
 				9FC2A4EC2D4E56B90009C689 /* RewardedAdViewModel.swift in Sources */,
 				9F4598CE2D2DDA2F002981C9 /* MessageHudView.swift in Sources */,
