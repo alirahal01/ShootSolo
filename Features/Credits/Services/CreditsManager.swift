@@ -324,45 +324,50 @@ class CreditsManager: ObservableObject, CreditsManagerProtocol {
     
     private func hasReceivedInitialCredits() -> Bool {
         let deviceId = getOrCreateDeviceId()
-        if let initializedDevices = KeychainHelper.load(key: guestCreditsInitializedKey) as? [String] {
-            return initializedDevices.contains(deviceId)
-        }
-        return false
+        return userDefaults.bool(forKey: "\(guestCreditsInitializedKey)_\(deviceId)")
     }
     
     private func markInitialCreditsReceived() {
         let deviceId = getOrCreateDeviceId()
-        
-        if var initializedDevices = KeychainHelper.load(key: guestCreditsInitializedKey) as? [String] {
-            if !initializedDevices.contains(deviceId) {
-                initializedDevices.append(deviceId)
-                KeychainHelper.save(initializedDevices, key: guestCreditsInitializedKey)
-            }
-        } else {
-            KeychainHelper.save([deviceId], key: guestCreditsInitializedKey)
-        }
+        userDefaults.set(true, forKey: "\(guestCreditsInitializedKey)_\(deviceId)")
     }
     
     func initializeGuestCredits() async {
+        print("Initializing guest credits...")
+        
         await MainActor.run {
-            // First check if there are any saved guest credits
             let savedGuestCredits = userDefaults.integer(forKey: guestCreditsKey)
             
             if savedGuestCredits > 0 {
-                // Use existing guest credits if available
                 creditsBalance = savedGuestCredits
                 print("Restored existing guest credits: \(creditsBalance)")
-            } else if !hasReceivedInitialCredits() {
-                // Only give initial credits if device hasn't received them before
+            } else {
                 creditsBalance = initialCreditsAmount
                 userDefaults.set(creditsBalance, forKey: guestCreditsKey)
-                markInitialCreditsReceived()
-                print("Initialized new guest credits: \(creditsBalance)")
-            } else {
-                // Device already received initial credits, use whatever is saved
-                creditsBalance = savedGuestCredits
-                print("Using existing guest credits: \(creditsBalance)")
+                print("Set new guest credits: \(creditsBalance)")
             }
+        }
+        
+        // Move device tracking to background task
+        Task {
+            await MainActor.run {
+                markInitialCreditsReceived()
+            }
+        }
+    }
+    
+    func deleteUserCredits() async throws {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            throw NSError(domain: "CreditsManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "No authenticated user"])
+        }
+        
+        // Delete the user's credits document from Firestore
+        let db = Firestore.firestore()
+        try await db.collection("users").document(userId).delete()
+        
+        // Clear local credits
+        await MainActor.run {
+            self.creditsBalance = 0
         }
     }
 }

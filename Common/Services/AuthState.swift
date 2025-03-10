@@ -101,15 +101,19 @@ class AuthState: ObservableObject {
     }
     
     func continueAsGuest() async {
+        print("Starting guest login...")
+        
+        // Update state immediately
         await MainActor.run {
             isGuestUser = true
             isLoggedIn = true
             userDefaults.set(true, forKey: guestStateKey)
-            
-            // Initialize guest credits if needed
-            Task {
-                await CreditsManager.shared.initializeGuestCredits()
-            }
+            print("Guest state updated")
+        }
+        
+        // Initialize credits in background
+        Task {
+            await CreditsManager.shared.initializeGuestCredits()
         }
     }
     

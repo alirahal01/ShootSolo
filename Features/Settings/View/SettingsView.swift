@@ -5,6 +5,8 @@ struct SettingsView: View {
     @State private var showingDeleteConfirmation = false
     @EnvironmentObject private var authState: AuthState
     @State private var fileNameError: String?
+    @State private var showErrorAlert = false
+    @State private var errorMessage = ""
     
     var body: some View {
         Form {
@@ -97,11 +99,43 @@ struct SettingsView: View {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
                 Task {
-                    try? await manager.deleteAccount()
+                    do {
+                        // First delete the account (which includes deleting credits)
+                        try await manager.deleteAccount()
+                        
+                        // Then update the UI state
+                        await MainActor.run {
+                            withAnimation {
+                                // Update auth state to trigger navigation
+                                authState.isLoggedIn = false
+                                authState.isGuestUser = false
+                                
+                                // Reset any other necessary state
+                                manager.settings = SettingsModel.defaultSettings
+                            }
+                        }
+                        
+                        // Post notification for other parts of the app that need to know
+                        NotificationCenter.default.post(
+                            name: .userDidBecomeUnauthenticated,
+                            object: nil
+                        )
+                    } catch {
+                        print("Failed to delete account: \(error)")
+                        await MainActor.run {
+                            errorMessage = error.localizedDescription
+                            showErrorAlert = true
+                        }
+                    }
                 }
             }
         } message: {
             Text("Are you sure you want to delete your account? This action cannot be undone.")
+        }
+        .alert("Error", isPresented: $showErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(errorMessage)
         }
     }
     

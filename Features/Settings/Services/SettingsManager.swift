@@ -4,7 +4,7 @@ import Foundation
 class SettingsManager: ObservableObject {
     static let shared = SettingsManager(authService: AuthenticationService.shared)
     
-    @Published private(set) var settings: SettingsModel
+    @Published var settings: SettingsModel
     private let storage: SettingsPersistable
     let authService: AuthenticationProtocol
     
@@ -47,7 +47,14 @@ class SettingsManager: ObservableObject {
     }
     
     func deleteAccount() async throws {
+        // First delete user's credits from Firestore
+        try await CreditsManager.shared.deleteUserCredits()
+        
+        // Then delete the account
         try await authService.deleteAccount()
+        
+        // Finally sign out and reset settings
+        try await signOut() // This will handle the sign out flow
     }
 }
 
