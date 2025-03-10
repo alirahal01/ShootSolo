@@ -2,24 +2,29 @@ import Foundation
 
 // RecordingKeywords.swift
 enum RecordingKeywords: String, Codable, CaseIterable {
-    case heyAction = "Camera Start"
-    case start = "Record Begin"
-    case startNow = "Action Rolling"
-    case go = "Rolling Camera"
+    case andAction = "And Action"
+    case readyAction = "Ready Action"
+    case readyGo = "Ready Go"
+    case rollCamera = "Roll Camera"
+    case startCamera = "Start Camera"
+    case cameraStart = "Camera Start"
+    case startRecording = "Start Recording"
     
     static var defaultStartKeyword: RecordingKeywords {
-        .heyAction
+        .andAction
     }
 }
 
 enum StopKeywords: String, Codable, CaseIterable {
-    case heyCut = "Camera Stop"
-    case stop = "Record End"
-    case stopNow = "Action Cut"
-    case cut = "Cut Rolling"
+    case andCut = "And Cut"
+    case andStop = "And Stop"
+    case readyStop = "Ready Stop"
+    case stopCamera = "Stop Camera"
+    case cameraStop = "Camera Stop"
+    case stopRecording = "Stop Recording"
     
     static var defaultStopKeyword: StopKeywords {
-        .heyCut
+        .andCut
     }
 }
 
@@ -52,8 +57,8 @@ struct SettingsModel: Codable {
     
     static var defaultSettings: SettingsModel {
         return SettingsModel(
-            selectedStartKeyword: .heyAction,
-            selectedStopKeyword: .heyCut,
+            selectedStartKeyword: .andAction,
+            selectedStopKeyword: .andCut,
             videoSettings: VideoSettings(
                 resolution: .uhd4k,
                 framerate: .fps60

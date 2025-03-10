@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 // SettingsManager.swift
 //@MainActor
 class SettingsManager: ObservableObject {
