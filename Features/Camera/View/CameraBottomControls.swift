@@ -32,7 +32,9 @@ struct CameraBottomControls: View {
             // Record Button
             Button(action: {
                 if isRecording {
-                    stopRecording()
+                    Task {
+                        await stopRecording()
+                    }
                 } else {
                     startRecording()
                 }

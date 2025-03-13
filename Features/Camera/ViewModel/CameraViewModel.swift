@@ -44,7 +44,7 @@ class CameraViewModel: ObservableObject {
                 case "start":
                     await self.startRecording()
                 case "stop":
-                    self.stopRecording()
+                    await self.stopRecording()
                 case "yes":
                     self.saveTake()
                 case "no":
@@ -93,12 +93,20 @@ class CameraViewModel: ObservableObject {
         }
     }
     
-    func stopRecording() {
-        SoundManager.shared.playStopSound()
-        speechRecognizer.stopListening()  // Stop camera context listening
+    func stopRecording() async {
+        // First stop the recording
         cameraManager.stopRecording()
         isRecording = false
         stopTimer()
+        
+        // Play the stop sound and wait for it to finish
+        let stopSoundDuration = SoundManager.shared.getStopSoundDuration()
+        SoundManager.shared.playStopSound()
+        
+        // Wait for stop sound to finish
+        try? await Task.sleep(for: .seconds(stopSoundDuration))
+        
+        speechRecognizer.stopListening()  // Stop camera context listening
         
         // Start save dialog context listening before showing dialog
         speechRecognizer.startListening(context: .saveDialog)

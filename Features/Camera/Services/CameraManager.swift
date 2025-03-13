@@ -275,7 +275,10 @@ class CameraManager: NSObject, ObservableObject {
     func stopRecording() {
         guard isRecording else { return }
         
+        // Stop recording immediately
         videoOutput?.stopRecording()
+        
+        // Update recording state
         DispatchQueue.main.async {
             self.isRecording = false
         }

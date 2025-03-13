@@ -68,14 +68,14 @@ struct CameraView: View {
                         isRecording: $viewModel.isRecording,
                         currentTake: $viewModel.currentTake,
                         startRecording: {
-                            // Using Task to avoid retain cycle
-                            Task { [weak viewModel] in
-                                await viewModel?.startRecording()
+                            Task {
+                                await viewModel.startRecording()
                             }
                         },
                         stopRecording: {
-                            // Using a closure that weakly captures viewModel
-                            viewModel.stopRecording()
+                            Task {
+                                await viewModel.stopRecording()
+                            }
                         },
                         switchCamera: viewModel.cameraManager.switchCamera
                     )
@@ -164,6 +164,11 @@ struct CameraView: View {
                     viewModel.startTimer()
                 }
             } else if newPhase == .background || newPhase == .inactive {
+                if viewModel.isRecording {
+                    Task {
+                        await viewModel.stopRecording()
+                    }
+                }
                 viewModel.speechRecognizer.stopListening()
                 viewModel.stopTimer()
             }

@@ -53,4 +53,8 @@ class SoundManager {
     func playSaveTakeSound() {
         saveTakeSound?.play()
     }
+    
+    func getStopSoundDuration() -> TimeInterval {
+        return stopSound?.duration ?? 0
+    }
 }
