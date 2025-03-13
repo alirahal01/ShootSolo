@@ -208,6 +208,46 @@ class CameraManager: NSObject, ObservableObject {
         return fileFormat + ".mov"
     }
     
+    private func configureVideoConnection() {
+        guard let videoConnection = videoOutput?.connection(with: .video),
+              let device = currentCamera else {
+            return
+        }
+        
+        do {
+            try device.lockForConfiguration()
+            
+            // Get the device zoom factor
+            let currentZoom = device.videoZoomFactor
+            
+            // Get the maximum scale and crop factor for the connection
+            let maxScaleAndCrop = videoConnection.videoMaxScaleAndCropFactor
+            
+            // Calculate the normalized scale factor (0.0 to 1.0)
+            let normalizedScale = (currentZoom - 1.0) / (device.activeFormat.videoMaxZoomFactor - 1.0)
+            
+            // Map the normalized scale to the connection's valid range
+            let connectionScale = 1.0 + (normalizedScale * (maxScaleAndCrop - 1.0))
+            
+            // Clamp the scale factor to valid range
+            let clampedScale = min(connectionScale, maxScaleAndCrop)
+            
+            // Apply the scale factor to the connection
+            videoConnection.videoScaleAndCropFactor = clampedScale
+            
+            // Enable video stabilization if available
+            if videoConnection.isVideoStabilizationSupported {
+                videoConnection.preferredVideoStabilizationMode = .auto
+            }
+            
+            device.unlockForConfiguration()
+            
+            print("Video connection configured - device zoom: \(currentZoom), connection scale: \(clampedScale)")
+        } catch {
+            print("Failed to configure video connection: \(error)")
+        }
+    }
+    
     func startRecording() {
         guard permissionGranted else { return }
         guard let videoOutput = videoOutput else {
@@ -215,15 +255,19 @@ class CameraManager: NSObject, ObservableObject {
             return
         }
         
+        // Important: Configure video connection before each recording
+        configureVideoConnection()
+        
         let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
         let fileUrl = paths[0].appendingPathComponent(generateFileName())
         currentVideoUrl = fileUrl
         
-        // Start recording on a background queue
-        DispatchQueue.global(qos: .userInitiated).async {
-            videoOutput.startRecording(to: fileUrl, recordingDelegate: self)
+        // Start recording on background queue
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            videoOutput.startRecording(to: fileUrl, recordingDelegate: self!)
+            
             DispatchQueue.main.async {
-                self.isRecording = true
+                self?.isRecording = true
             }
         }
     }
@@ -329,41 +373,58 @@ class CameraManager: NSObject, ObservableObject {
     }
     
     func setZoomFactor(_ zoomFactor: CGFloat) {
-        guard let device = currentCamera else {
-            print("Camera device not available")
+        guard let device = currentCamera,
+              let videoConnection = videoOutput?.connection(with: .video) else {
+            print("Camera device or video connection not available")
             return
         }
         
         do {
             try device.lockForConfiguration()
             
-            // Get the actual zoom factor based on device capabilities
-            let maxZoom = device.activeFormat.videoMaxZoomFactor
+            // Get device zoom range
+            let minZoom = device.minAvailableVideoZoomFactor
+            let maxZoom = device.maxAvailableVideoZoomFactor
             
             // Calculate the actual zoom factor to apply
             var actualZoom = zoomFactor
-            if device.deviceType != .builtInUltraWideCamera {
-                // For non-ultra-wide cameras, map the zoom factors differently
-                switch zoomFactor {
-                case 0.5: // When user selects "0.5x"
-                    actualZoom = 1.0  // Use no zoom
-                case 1.0: // When user selects "1x"
-                    actualZoom = 1.5  // Use slight zoom
-                case 2.0: // When user selects "2x"
-                    actualZoom = min(2.0, maxZoom)  // Use maximum zoom up to 2x
-                default:
-                    break
-                }
+            
+            // Ensure 1.0 is actually 1.0 (no zoom)
+            switch zoomFactor {
+            case 0.5:
+                // For ultra-wide, use minimum zoom
+                actualZoom = device.deviceType == .builtInUltraWideCamera ? 0.5 : minZoom
+            case 1.0:
+                // Always use exactly 1.0 for no zoom
+                actualZoom = 1.0
+            case 2.0:
+                // Use 2x or max available zoom
+                actualZoom = min(2.0, maxZoom)
+            default:
+                break
             }
             
-            // Clamp the zoom factor within device limits
-            let clampedZoom = max(1.0, min(actualZoom, maxZoom))
+            // Clamp zoom within device limits
+            let clampedZoom = max(minZoom, min(actualZoom, maxZoom))
+            
+            // Set device zoom
             device.videoZoomFactor = clampedZoom
             
-            print("Setting zoom factor: requested=\(zoomFactor), actual=\(clampedZoom)")
+            // Calculate and set connection scale factor
+            let maxScaleAndCrop = videoConnection.videoMaxScaleAndCropFactor
+            
+            // Ensure scale factor is proportional to zoom, with 1.0 being no scale
+            let normalizedScale = (clampedZoom - 1.0) / (maxZoom - 1.0)
+            let connectionScale = 1.0 + (normalizedScale * (maxScaleAndCrop - 1.0))
+            let clampedScale = min(connectionScale, maxScaleAndCrop)
+            
+            videoConnection.videoScaleAndCropFactor = clampedScale
+            
+            print("Zoom updated - requested: \(zoomFactor), actual zoom: \(clampedZoom), scale: \(clampedScale)")
             device.unlockForConfiguration()
+            
         } catch {
-            print("Failed to set zoom factor: \(error.localizedDescription)")
+            print("Failed to set zoom factor: \(error)")
         }
     }
 }
