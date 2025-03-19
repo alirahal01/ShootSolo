@@ -60,7 +60,7 @@ struct SaveTakeDialog: View {
     
     private var statusText: String {
         if speechRecognizer.hasError {
-            return "<- Tap to refresh to start listening"
+            return "<- Tap refresh to start listening"
         } else {
             return "Listening for YES or NO..."
         }
