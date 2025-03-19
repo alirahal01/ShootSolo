@@ -65,6 +65,7 @@
 		9FDE68282D72399100DEDDDB /* FileNameGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FDE68262D72399100DEDDDB /* FileNameGenerator.swift */; };
 		9FDE682A2D748CA600DEDDDB /* GuestCreditsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FDE68292D748CA600DEDDDB /* GuestCreditsManager.swift */; };
 		9FDE682E2D7E216000DEDDDB /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FDE682D2D7E216000DEDDDB /* NetworkMonitor.swift */; };
+		9FDE68302D8B0F3C00DEDDDB /* SplashScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FDE682F2D8B0F3C00DEDDDB /* SplashScreen.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -142,6 +143,7 @@
 		9FDE68262D72399100DEDDDB /* FileNameGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileNameGenerator.swift; sourceTree = "<group>"; };
 		9FDE68292D748CA600DEDDDB /* GuestCreditsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuestCreditsManager.swift; sourceTree = "<group>"; };
 		9FDE682D2D7E216000DEDDDB /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		9FDE682F2D8B0F3C00DEDDDB /* SplashScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreen.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -252,6 +254,7 @@
 		9F45988B2D2DDA2A002981C9 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				9FDE682F2D8B0F3C00DEDDDB /* SplashScreen.swift */,
 				9F45988C2D2DDA2A002981C9 /* ZoomControlView.swift */,
 				9F45988D2D2DDA2A002981C9 /* SaveTakeDialog.swift */,
 				9F45988E2D2DDA2A002981C9 /* RecordingTimerView.swift */,
@@ -675,6 +678,7 @@
 				9F4598972D2DDA2A002981C9 /* RecordingTimerView.swift in Sources */,
 				9F45989B2D2DDA2A002981C9 /* LoadingView.swift in Sources */,
 				9F4598C72D2DDA2F002981C9 /* AdvancedSettingsView.swift in Sources */,
+				9FDE68302D8B0F3C00DEDDDB /* SplashScreen.swift in Sources */,
 				9FDE68282D72399100DEDDDB /* FileNameGenerator.swift in Sources */,
 				9F4598D52D2DDA2F002981C9 /* SuccessfulLoginHUD.swift in Sources */,
 			);
