@@ -34,7 +34,7 @@ struct MessageHUDView: View {
         if speechRecognizer.hasError {
             return "<- Tap refresh to start listening"
         } else {
-            return "Say \"\(settingsManager.settings.selectedStartKeyword.rawValue)\" to start,\n\"\(settingsManager.settings.selectedStopKeyword.rawValue)\" to stop."
+            return "Listening...\nSay \"\(settingsManager.settings.selectedStartKeyword.rawValue)\" to start,\n\"\(settingsManager.settings.selectedStopKeyword.rawValue)\" to stop."
         }
     }
 }
