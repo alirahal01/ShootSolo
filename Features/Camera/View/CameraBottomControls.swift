@@ -4,6 +4,7 @@ import PhotosUI
 struct CameraBottomControls: View {
     @Binding var isRecording: Bool
     @Binding var currentTake: Int
+    @State private var showPhotoLibraryAlert = false
     var startRecording: () -> Void
     var stopRecording: () -> Void
     var switchCamera: () -> Void
@@ -13,7 +14,7 @@ struct CameraBottomControls: View {
             // Gallery Button
             if !isRecording {
                 Button(action: {
-                    openPhotoGallery()
+                    checkPhotoLibraryAccess()
                 }) {
                     ZStack {
                         Circle()
@@ -26,6 +27,14 @@ struct CameraBottomControls: View {
                             .frame(width: 25, height: 25)
                             .foregroundColor(.white)
                     }
+                }
+                .alert("Photo Library Access Required", isPresented: $showPhotoLibraryAlert) {
+                    Button("Cancel", role: .cancel) { }
+                    Button("Open Settings") {
+                        openSettings()
+                    }
+                } message: {
+                    Text("Please enable photo library access in Settings to view your gallery")
                 }
             }
             
@@ -80,9 +89,36 @@ struct CameraBottomControls: View {
         .background(Color.clear)
     }
     
+    private func checkPhotoLibraryAccess() {
+        switch PHPhotoLibrary.authorizationStatus() {
+        case .authorized, .limited:
+            openPhotoGallery()
+        case .denied, .restricted:
+            showPhotoLibraryAlert = true
+        case .notDetermined:
+            PHPhotoLibrary.requestAuthorization { status in
+                DispatchQueue.main.async {
+                    if status == .authorized || status == .limited {
+                        openPhotoGallery()
+                    } else {
+                        showPhotoLibraryAlert = true
+                    }
+                }
+            }
+        @unknown default:
+            break
+        }
+    }
+    
     private func openPhotoGallery() {
         if let url = URL(string: "photos-redirect://") {
             UIApplication.shared.open(url)
+        }
+    }
+    
+    private func openSettings() {
+        if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(settingsUrl)
         }
     }
 }

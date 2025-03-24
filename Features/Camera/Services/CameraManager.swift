@@ -6,6 +6,7 @@ class CameraManager: NSObject, ObservableObject {
     @Published var isRecording = false
     @Published var permissionGranted = false
     @Published var isReady = false
+    @Published var microphonePermissionGranted = false
     
     private var videoOutput: AVCaptureMovieFileOutput?
     private var currentCamera: AVCaptureDevice?
@@ -22,41 +23,78 @@ class CameraManager: NSObject, ObservableObject {
     }
     
     private func checkPermissions() {
-        // Check camera permissions
+        // Check camera permissions first
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
-            // Camera permissions granted, now check photo library permissions
-            checkPhotoLibraryPermissions()
+            // Camera permissions granted, check microphone next
+            checkMicrophonePermissions()
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
                 if granted {
                     DispatchQueue.main.async {
-                        self?.checkPhotoLibraryPermissions()
+                        self?.checkMicrophonePermissions()
+                    }
+                } else {
+                    DispatchQueue.main.async {
+                        self?.permissionGranted = false
                     }
                 }
             }
-        default:
-            break
+        case .denied, .restricted:
+            DispatchQueue.main.async {
+                self.permissionGranted = false
+            }
+        }
+    }
+    
+    private func checkMicrophonePermissions() {
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized:
+            DispatchQueue.main.async { [weak self] in
+                self?.microphonePermissionGranted = true
+                self?.permissionGranted = true
+                self?.setupCamera()
+            }
+            // Check photo library permissions separately
+            checkPhotoLibraryPermissions()
+            
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
+                if granted {
+                    DispatchQueue.main.async {
+                        self?.microphonePermissionGranted = true
+                        self?.permissionGranted = true
+                        self?.setupCamera()
+                    }
+                    // Check photo library permissions after setup
+                    self?.checkPhotoLibraryPermissions()
+                } else {
+                    DispatchQueue.main.async {
+                        self?.microphonePermissionGranted = false
+                        self?.permissionGranted = false
+                    }
+                }
+            }
+        case .denied, .restricted:
+            DispatchQueue.main.async {
+                self.microphonePermissionGranted = false
+                self.permissionGranted = false
+            }
         }
     }
     
     private func checkPhotoLibraryPermissions() {
+        // This is now only for saving videos later
         switch PHPhotoLibrary.authorizationStatus() {
         case .authorized, .limited:
-            setupCamera()
-            DispatchQueue.main.async {
-                self.permissionGranted = true
-            }
+            // Photo library access granted
+            break
         case .notDetermined:
-            PHPhotoLibrary.requestAuthorization { [weak self] status in
-                DispatchQueue.main.async {
-                    if status == .authorized || status == .limited {
-                        self?.setupCamera()
-                        self?.permissionGranted = true
-                    }
-                }
+            PHPhotoLibrary.requestAuthorization { _ in
+                // Handle photo library permission result
             }
-        default:
+        case .denied, .restricted:
+            // Handle denied photo library access
             break
         }
     }
@@ -75,7 +113,7 @@ class CameraManager: NSObject, ObservableObject {
         }
     }
     
-    private func setupCamera() {
+    func setupCamera() {
         setupAudioSession()
         
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
@@ -104,11 +142,15 @@ class CameraManager: NSObject, ObservableObject {
                 return
             }
             
-            // Add audio input
-            if let audioDevice = AVCaptureDevice.default(for: .audio),
+            // Add audio input only if microphone permission is granted
+            if microphonePermissionGranted,
+               let audioDevice = AVCaptureDevice.default(for: .audio),
                let audioInput = try? AVCaptureDeviceInput(device: audioDevice) {
                 if session.canAddInput(audioInput) {
                     session.addInput(audioInput)
+                    print("Added audio input successfully")
+                } else {
+                    print("Could not add audio input")
                 }
             }
             
@@ -451,3 +493,5 @@ extension CameraManager: AVCaptureFileOutputRecordingDelegate {
         }
     }
 }
+
+

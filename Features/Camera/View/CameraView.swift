@@ -6,6 +6,8 @@ struct CameraView: View {
     @StateObject private var viewModel: CameraViewModel
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var authState: AuthState
+    @State private var showCameraAlert = false
+    @State private var showMicrophoneAlert = false
     
     init() {
         _viewModel = StateObject(wrappedValue: CameraViewModel())
@@ -13,86 +15,128 @@ struct CameraView: View {
     
     var body: some View {
         ZStack {
-            Color.black.edgesIgnoringSafeArea(.all) // Black background
+            Color.black.edgesIgnoringSafeArea(.all)
             
-            // Camera Preview Container
-            GeometryReader { geometry in
-                let width = geometry.size.width
-                let height = width * 16/9 // 9:16 aspect ratio
-                
-                ZStack {
-                    // Camera Preview
-                    CameraPreviewView(session: viewModel.cameraManager.session)
-                        .frame(width: width, height: height)
-                        .clipped()
+            if viewModel.cameraManager.permissionGranted {
+                // Camera Preview Container
+                GeometryReader { geometry in
+                    let width = geometry.size.width
+                    let height = width * 16/9 // 9:16 aspect ratio
                     
-                    // Grid Overlay - exactly matching preview dimensions
-                    if viewModel.isGridEnabled {
-                        GridOverlay()
+                    ZStack {
+                        // Camera Preview
+                        CameraPreviewView(session: viewModel.cameraManager.session)
                             .frame(width: width, height: height)
                             .clipped()
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .offset(y: 20) // Changed from 40 to 20 for toolbar spacing
-            }
-            
-            // Controls overlay
-            VStack {
-                Spacer()
-                
-                // Zoom Control
-                ZoomControlView(zoomFactor: $viewModel.zoomFactor)
-                    .onChange(of: viewModel.zoomFactor) { newValue in
-                        viewModel.setZoomFactor(newValue)
-                    }
-                    .padding(.bottom, 8) // 8pt padding between zoom and message HUD
-                
-                MessageHUDView(
-                    speechRecognizer: viewModel.speechRecognizer,
-                    context: .camera
-                )
-                .padding(.bottom, 12) // Reduced from 20 to 12 to bring controls closer
-                
-                // Bottom Controls
-                CameraBottomControls(
-                    isRecording: $viewModel.isRecording,
-                    currentTake: $viewModel.currentTake,
-                    startRecording: {
-                        Task {
-                            await viewModel.startRecording()
+                        
+                        // Grid Overlay - exactly matching preview dimensions
+                        if viewModel.isGridEnabled {
+                            GridOverlay()
+                                .frame(width: width, height: height)
+                                .clipped()
                         }
-                    },
-                    stopRecording: {
-                        Task {
-                            await viewModel.stopRecording()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .offset(y: 20) // Changed from 40 to 20 for toolbar spacing
+                }
+                
+                // Controls overlay
+                VStack {
+                    Spacer()
+                    
+                    // Zoom Control
+                    ZoomControlView(zoomFactor: $viewModel.zoomFactor)
+                        .onChange(of: viewModel.zoomFactor) { newValue in
+                            viewModel.setZoomFactor(newValue)
                         }
-                    },
-                    switchCamera: viewModel.cameraManager.switchCamera
-                )
-                .padding(.bottom, 40) // Reduced from 30 to 20 to push up
-            }
-            
-            // Save Dialog
-            if viewModel.showingSaveDialog {
-                SaveTakeDialog(
-                    takeNumber: viewModel.currentTake,
-                    onSave: viewModel.saveTake,
-                    onDiscard: viewModel.discardTake,
-                    speechRecognizer: viewModel.speechRecognizer
-                )
-                .onAppear {
-                    viewModel.speechRecognizer.stopListening()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak viewModel] in
-                        viewModel?.speechRecognizer.startListening(context: .saveDialog)
+                        .padding(.bottom, 8) // 8pt padding between zoom and message HUD
+                    
+                    MessageHUDView(
+                        speechRecognizer: viewModel.speechRecognizer,
+                        context: .camera
+                    )
+                    .padding(.bottom, 12) // Reduced from 20 to 12 to bring controls closer
+                    
+                    // Bottom Controls
+                    CameraBottomControls(
+                        isRecording: $viewModel.isRecording,
+                        currentTake: $viewModel.currentTake,
+                        startRecording: {
+                            Task {
+                                await viewModel.startRecording()
+                            }
+                        },
+                        stopRecording: {
+                            Task {
+                                await viewModel.stopRecording()
+                            }
+                        },
+                        switchCamera: viewModel.cameraManager.switchCamera
+                    )
+                    .padding(.bottom, 40) // Reduced from 30 to 20 to push up
+                }
+                
+                // Save Dialog
+                if viewModel.showingSaveDialog {
+                    SaveTakeDialog(
+                        takeNumber: viewModel.currentTake,
+                        onSave: viewModel.saveTake,
+                        onDiscard: viewModel.discardTake,
+                        speechRecognizer: viewModel.speechRecognizer
+                    )
+                    .onAppear {
+                        viewModel.speechRecognizer.stopListening()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak viewModel] in
+                            viewModel?.speechRecognizer.startListening(context: .saveDialog)
+                        }
+                    }
+                    .onDisappear {
+                        viewModel.speechRecognizer.stopListening()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak viewModel] in
+                            viewModel?.speechRecognizer.startListening(context: .camera)
+                        }
                     }
                 }
-                .onDisappear {
-                    viewModel.speechRecognizer.stopListening()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak viewModel] in
-                        viewModel?.speechRecognizer.startListening(context: .camera)
+            } else {
+                // Permission denied view
+                VStack(spacing: 20) {
+                    Image(systemName: getPermissionIcon())
+                        .font(.system(size: 50))
+                        .foregroundColor(.white)
+                    
+                    Text(permissionDeniedTitle)
+                        .font(.title2)
+                        .foregroundColor(.white)
+                    
+                    Text(permissionDeniedMessage)
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.white.opacity(0.8))
+                        .padding(.horizontal)
+                    
+                    // Show buttons based on actual permission status
+                    VStack(spacing: 15) {
+                        if shouldShowCameraButton() {
+                            Button("Check Camera") {
+                                checkCameraPermission()
+                            }
+                            .padding()
+                            .background(Color.red)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                        }
+                        
+                        if shouldShowMicrophoneButton() {
+                            Button("Check Microphone") {
+                                checkMicrophonePermission()
+                            }
+                            .padding()
+                            .background(Color.red)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                        }
                     }
                 }
+                .padding()
             }
         }
         .toolbar {
@@ -195,6 +239,116 @@ struct CameraView: View {
             }
         } message: {
             Text("Your session has expired. Please sign in again to continue.")
+        }
+        .alert("Camera Access Required", isPresented: $showCameraAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Open Settings") {
+                openSettings()
+            }
+        } message: {
+            Text("Please enable camera access in Settings to use this feature")
+        }
+        .alert("Microphone Access Required", isPresented: $showMicrophoneAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Open Settings") {
+                openSettings()
+            }
+        } message: {
+            Text("Please enable microphone access in Settings to record videos with audio")
+        }
+    }
+    
+    private func checkCameraPermission() {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .denied, .restricted:
+            showCameraAlert = true
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                DispatchQueue.main.async {
+                    if !granted {
+                        showCameraAlert = true
+                    }
+                }
+            }
+        default:
+            break
+        }
+    }
+    
+    private func checkMicrophonePermission() {
+        if !viewModel.cameraManager.microphonePermissionGranted {
+            switch AVCaptureDevice.authorizationStatus(for: .audio) {
+            case .denied, .restricted:
+                showMicrophoneAlert = true
+            case .notDetermined:
+                AVCaptureDevice.requestAccess(for: .audio) { granted in
+                    DispatchQueue.main.async {
+                        if !granted {
+                            self.showMicrophoneAlert = true
+                        } else {
+                            // Reinitialize camera setup if needed
+                            self.viewModel.cameraManager.setupCamera()
+                        }
+                    }
+                }
+            default:
+                break
+            }
+        }
+    }
+    
+    private func openSettings() {
+        if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(settingsUrl)
+        }
+    }
+    
+    // Add these computed properties to CameraView
+    private var permissionDeniedTitle: String {
+        if !viewModel.cameraManager.permissionGranted && !viewModel.cameraManager.microphonePermissionGranted {
+            return "Camera & Microphone Access Required"
+        } else if !viewModel.cameraManager.permissionGranted {
+            return "Camera Access Required"
+        } else {
+            return "Microphone Access Required"
+        }
+    }
+    
+    private var permissionDeniedMessage: String {
+        if !viewModel.cameraManager.permissionGranted && !viewModel.cameraManager.microphonePermissionGranted {
+            return "Please enable both camera and microphone access in Settings to use this feature"
+        } else if !viewModel.cameraManager.permissionGranted {
+            return "Please enable camera access in Settings to use this feature"
+        } else {
+            return "Please enable microphone access in Settings to record videos with audio"
+        }
+    }
+    
+    // Add these helper functions
+    private func getPermissionIcon() -> String {
+        if shouldShowCameraButton() {
+            return "camera.slash.fill"
+        } else if shouldShowMicrophoneButton() {
+            return "mic.slash.fill"
+        }
+        return "camera.slash.fill" // Default icon
+    }
+    
+    private func shouldShowCameraButton() -> Bool {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .denied, .restricted:
+            return true
+        default:
+            return false
+        }
+    }
+    
+    private func shouldShowMicrophoneButton() -> Bool {
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .denied, .restricted:
+            return true
+        default:
+            return false
         }
     }
 }
