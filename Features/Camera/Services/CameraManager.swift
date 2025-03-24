@@ -102,19 +102,49 @@ class CameraManager: NSObject, ObservableObject {
     private func setupAudioSession() {
         do {
             let audioSession = AVAudioSession.sharedInstance()
+            
+            // First deactivate the session
+            try audioSession.setActive(false)
+            
+            // Configure the audio session
             try audioSession.setCategory(.playAndRecord, 
-                                      mode: .videoRecording,
-                                      options: [.allowBluetooth, .mixWithOthers, .defaultToSpeaker])
-            try audioSession.setPreferredSampleRate(44100.0)
-            try audioSession.setPreferredIOBufferDuration(0.005)
-            try audioSession.setActive(true)
-        } catch {
-            print("Audio session setup failed: \(error)")
+                                       mode: .videoRecording,
+                                       options: [.allowBluetooth, .mixWithOthers])
+            
+            // Set the preferred sample rate
+            let preferredSampleRate: Double = 44100.0
+            try audioSession.setPreferredSampleRate(preferredSampleRate)
+            
+            // Set a reasonable I/O buffer duration
+            let preferredIOBufferDuration: TimeInterval = 0.005
+            try audioSession.setPreferredIOBufferDuration(preferredIOBufferDuration)
+            
+            // Finally activate the session
+            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+            
+            print("Audio session setup successful")
+            print("Sample rate: \(audioSession.sampleRate)")
+            print("IO Buffer duration: \(audioSession.ioBufferDuration)")
+            print("Input number of channels: \(audioSession.inputNumberOfChannels)")
+            
+        } catch let error as NSError {
+            print("Audio session setup failed: \(error.localizedDescription)")
+            print("Error code: \(error.code)")
+            print("Error domain: \(error.domain)")
+            print("Error user info: \(error.userInfo)")
         }
     }
     
     func setupCamera() {
-        setupAudioSession()
+        // Stop any existing session
+        if session.isRunning {
+            session.stopRunning()
+        }
+        
+        // Remove any existing inputs and outputs
+        session.beginConfiguration()
+        session.inputs.forEach { session.removeInput($0) }
+        session.outputs.forEach { session.removeOutput($0) }
         
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
             print("Failed to get camera device")
@@ -123,16 +153,8 @@ class CameraManager: NSObject, ObservableObject {
         }
         currentCamera = device
         
-        session.beginConfiguration()
-        
         do {
-            // Configure session for minimal interruption
-            session.automaticallyConfiguresApplicationAudioSession = false
-            session.usesApplicationAudioSession = true
-            
-            // Set consistent high quality preset
-            session.sessionPreset = .hd1920x1080 // Changed from .high to specific resolution
-            
+            // Add video input first
             let input = try AVCaptureDeviceInput(device: device)
             if session.canAddInput(input) {
                 session.addInput(input)
@@ -141,6 +163,21 @@ class CameraManager: NSObject, ObservableObject {
                 isReady = false
                 return
             }
+            
+            // Configure video output
+            videoOutput = AVCaptureMovieFileOutput()
+            if let videoOutput = videoOutput {
+                if session.canAddOutput(videoOutput) {
+                    session.addOutput(videoOutput)
+                } else {
+                    print("Could not add video output")
+                    isReady = false
+                    return
+                }
+            }
+            
+            // Set up audio session before adding audio input
+            setupAudioSession()
             
             // Add audio input only if microphone permission is granted
             if microphonePermissionGranted,
@@ -154,32 +191,8 @@ class CameraManager: NSObject, ObservableObject {
                 }
             }
             
-            videoOutput = AVCaptureMovieFileOutput()
-            if let videoOutput = videoOutput {
-                // Configure video output settings
-                videoOutput.movieFragmentInterval = .invalid
-                
-                // Set video output connection properties
-                if let connection = videoOutput.connection(with: .video) {
-                    // Lock the video orientation to portrait
-                    if connection.isVideoOrientationSupported {
-                        connection.videoOrientation = .portrait
-                    }
-                    
-                    // Set video stabilization mode if supported
-                    if connection.isVideoStabilizationSupported {
-                        connection.preferredVideoStabilizationMode = .auto
-                    }
-                }
-                
-                if session.canAddOutput(videoOutput) {
-                    session.addOutput(videoOutput)
-                } else {
-                    print("Could not add video output")
-                    isReady = false
-                    return
-                }
-            }
+            // Set session preset after configuring inputs and outputs
+            session.sessionPreset = .hd1920x1080
             
             session.commitConfiguration()
             
@@ -190,8 +203,9 @@ class CameraManager: NSObject, ObservableObject {
                     self?.isReady = true
                 }
             }
+            
         } catch {
-            print("Failed to setup camera: \(error.localizedDescription)")
+            print("Camera setup failed: \(error.localizedDescription)")
             session.commitConfiguration()
             isReady = false
         }
