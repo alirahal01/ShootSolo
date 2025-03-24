@@ -88,6 +88,13 @@ class CameraManager: NSObject, ObservableObject {
         session.beginConfiguration()
         
         do {
+            // Configure session for minimal interruption
+            session.automaticallyConfiguresApplicationAudioSession = false
+            session.usesApplicationAudioSession = true
+            
+            // Set consistent high quality preset
+            session.sessionPreset = .hd1920x1080 // Changed from .high to specific resolution
+            
             let input = try AVCaptureDeviceInput(device: device)
             if session.canAddInput(input) {
                 session.addInput(input)
@@ -102,22 +109,39 @@ class CameraManager: NSObject, ObservableObject {
                let audioInput = try? AVCaptureDeviceInput(device: audioDevice) {
                 if session.canAddInput(audioInput) {
                     session.addInput(audioInput)
-                } else {
-                    print("Could not add audio input")
                 }
             }
             
             videoOutput = AVCaptureMovieFileOutput()
-            if let videoOutput = videoOutput, session.canAddOutput(videoOutput) {
-                session.addOutput(videoOutput)
-            } else {
-                print("Could not add video output")
-                isReady = false
-                return
+            if let videoOutput = videoOutput {
+                // Configure video output settings
+                videoOutput.movieFragmentInterval = .invalid
+                
+                // Set video output connection properties
+                if let connection = videoOutput.connection(with: .video) {
+                    // Lock the video orientation to portrait
+                    if connection.isVideoOrientationSupported {
+                        connection.videoOrientation = .portrait
+                    }
+                    
+                    // Set video stabilization mode if supported
+                    if connection.isVideoStabilizationSupported {
+                        connection.preferredVideoStabilizationMode = .auto
+                    }
+                }
+                
+                if session.canAddOutput(videoOutput) {
+                    session.addOutput(videoOutput)
+                } else {
+                    print("Could not add video output")
+                    isReady = false
+                    return
+                }
             }
             
             session.commitConfiguration()
             
+            // Start session on background thread
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
                 self?.session.startRunning()
                 DispatchQueue.main.async {
@@ -209,43 +233,16 @@ class CameraManager: NSObject, ObservableObject {
     }
     
     private func configureVideoConnection() {
-        guard let videoConnection = videoOutput?.connection(with: .video),
-              let device = currentCamera else {
+        guard let videoConnection = videoOutput?.connection(with: .video) else {
             return
         }
         
-        do {
-            try device.lockForConfiguration()
-            
-            // Get the device zoom factor
-            let currentZoom = device.videoZoomFactor
-            
-            // Get the maximum scale and crop factor for the connection
-            let maxScaleAndCrop = videoConnection.videoMaxScaleAndCropFactor
-            
-            // Calculate the normalized scale factor (0.0 to 1.0)
-            let normalizedScale = (currentZoom - 1.0) / (device.activeFormat.videoMaxZoomFactor - 1.0)
-            
-            // Map the normalized scale to the connection's valid range
-            let connectionScale = 1.0 + (normalizedScale * (maxScaleAndCrop - 1.0))
-            
-            // Clamp the scale factor to valid range
-            let clampedScale = min(connectionScale, maxScaleAndCrop)
-            
-            // Apply the scale factor to the connection
-            videoConnection.videoScaleAndCropFactor = clampedScale
-            
-            // Enable video stabilization if available
-            if videoConnection.isVideoStabilizationSupported {
-                videoConnection.preferredVideoStabilizationMode = .auto
-            }
-            
-            device.unlockForConfiguration()
-            
-            print("Video connection configured - device zoom: \(currentZoom), connection scale: \(clampedScale)")
-        } catch {
-            print("Failed to configure video connection: \(error)")
+        // Enable video stabilization if available
+        if videoConnection.isVideoStabilizationSupported {
+            videoConnection.preferredVideoStabilizationMode = .auto
         }
+        
+        print("Video connection configured with stabilization")
     }
     
     func startRecording() {
@@ -255,14 +252,12 @@ class CameraManager: NSObject, ObservableObject {
             return
         }
         
-        // Important: Configure video connection before each recording
-        configureVideoConnection()
-        
+        // Minimize configuration during recording start
         let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
         let fileUrl = paths[0].appendingPathComponent(generateFileName())
         currentVideoUrl = fileUrl
         
-        // Start recording on background queue
+        // Start recording without reconfiguring video connection
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             videoOutput.startRecording(to: fileUrl, recordingDelegate: self!)
             

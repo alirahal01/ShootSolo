@@ -8,12 +8,19 @@ struct CameraPreviewView: UIViewRepresentable {
         let view = PreviewView()
         view.backgroundColor = .black
         view.videoPreviewLayer.session = session
-        view.videoPreviewLayer.videoGravity = .resizeAspectFill
+        
+        // Set consistent video gravity
+        view.videoPreviewLayer.videoGravity = .resizeAspect // Changed from resizeAspectFill
+        
+        // Lock the preview orientation to portrait
+        view.videoPreviewLayer.connection?.videoOrientation = .portrait
+        
         return view
     }
     
     func updateUIView(_ uiView: PreviewView, context: Context) {
-        // No update needed
+        // Update frame on rotation if needed
+        uiView.videoPreviewLayer.frame = uiView.bounds
     }
 }
 
@@ -24,6 +31,11 @@ class PreviewView: UIView {
     
     var videoPreviewLayer: AVCaptureVideoPreviewLayer {
         return layer as! AVCaptureVideoPreviewLayer
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        videoPreviewLayer.frame = bounds
     }
 }
 

@@ -13,14 +13,64 @@ struct CameraView: View {
     
     var body: some View {
         ZStack {
-            // Camera Preview
-            CameraPreviewView(session: viewModel.cameraManager.session)
-                .edgesIgnoringSafeArea(.all)
+            Color.black.edgesIgnoringSafeArea(.all) // Black background
             
-            // Grid Overlay
-            if viewModel.isGridEnabled {
-                GridOverlay()
-                    .edgesIgnoringSafeArea(.all)
+            // Camera Preview Container
+            GeometryReader { geometry in
+                let width = geometry.size.width
+                let height = width * 16/9 // 9:16 aspect ratio
+                
+                ZStack {
+                    // Camera Preview
+                    CameraPreviewView(session: viewModel.cameraManager.session)
+                        .frame(width: width, height: height)
+                        .clipped()
+                    
+                    // Grid Overlay - exactly matching preview dimensions
+                    if viewModel.isGridEnabled {
+                        GridOverlay()
+                            .frame(width: width, height: height)
+                            .clipped()
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .offset(y: 20) // Changed from 40 to 20 for toolbar spacing
+            }
+            
+            // Controls overlay
+            VStack {
+                Spacer()
+                
+                // Zoom Control
+                ZoomControlView(zoomFactor: $viewModel.zoomFactor)
+                    .onChange(of: viewModel.zoomFactor) { newValue in
+                        viewModel.setZoomFactor(newValue)
+                    }
+                    .padding(.bottom, 8) // 8pt padding between zoom and message HUD
+                
+                MessageHUDView(
+                    speechRecognizer: viewModel.speechRecognizer,
+                    context: .camera
+                )
+                .padding(.bottom, 12) // Reduced from 20 to 12 to bring controls closer
+                
+                // Bottom Controls
+                CameraBottomControls(
+                    isRecording: $viewModel.isRecording,
+                    currentTake: $viewModel.currentTake,
+                    startRecording: {
+                        Task {
+                            await viewModel.startRecording()
+                        }
+                    },
+                    stopRecording: {
+                        Task {
+                            await viewModel.stopRecording()
+                        }
+                    },
+                    switchCamera: viewModel.cameraManager.switchCamera
+                )
+                .padding(.bottom, 40) // Reduced from 30 to 20 to push up
             }
             
             // Save Dialog
@@ -33,52 +83,15 @@ struct CameraView: View {
                 )
                 .onAppear {
                     viewModel.speechRecognizer.stopListening()
-                    // Use weak capture to prevent potential retain cycles
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak viewModel] in
                         viewModel?.speechRecognizer.startListening(context: .saveDialog)
                     }
                 }
                 .onDisappear {
                     viewModel.speechRecognizer.stopListening()
-                    // Use weak capture to prevent potential retain cycles
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak viewModel] in
                         viewModel?.speechRecognizer.startListening(context: .camera)
                     }
-                }
-            } else {
-                // UI Controls
-                VStack {
-                    Spacer()
-                    
-                    // Zoom Control
-                    ZoomControlView(zoomFactor: $viewModel.zoomFactor)
-                        .onChange(of: viewModel.zoomFactor) { newValue in
-                            viewModel.setZoomFactor(newValue)
-                        }
-                        .padding(.bottom, 10)
-                    
-                    MessageHUDView(
-                        speechRecognizer: viewModel.speechRecognizer,
-                        context: .camera
-                    )
-                    .padding(.bottom, 10)
-                    
-                    // Bottom Controls - Pass only the required methods and bindings
-                    CameraBottomControls(
-                        isRecording: $viewModel.isRecording,
-                        currentTake: $viewModel.currentTake,
-                        startRecording: {
-                            Task {
-                                await viewModel.startRecording()
-                            }
-                        },
-                        stopRecording: {
-                            Task {
-                                await viewModel.stopRecording()
-                            }
-                        },
-                        switchCamera: viewModel.cameraManager.switchCamera
-                    )
                 }
             }
         }
