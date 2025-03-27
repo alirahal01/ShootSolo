@@ -121,8 +121,16 @@ class SpeechRecognizer: NSObject, ObservableObject {
         // First ensure we're fully stopped and cleaned up
         stopCurrentRecognitionTask()
         
-        // Wait a moment to ensure cleanup is complete
-        try? await Task.sleep(for: .seconds(0.1))
+        // Reset audio session
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setActive(false)
+            try audioSession.setCategory(.playAndRecord, mode: .default)
+            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            print("🎤❌ SpeechRecognizer: Failed to configure audio session: \(error)")
+            throw error
+        }
         
         // Create new recognition request
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
@@ -136,15 +144,9 @@ class SpeechRecognizer: NSObject, ObservableObject {
         
         // Configure audio engine and input node
         let inputNode = audioEngine.inputNode
-        
-        // Reset the audio engine
-        audioEngine.stop()
-        audioEngine.reset()
-        
-        // Get the recording format
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         
-        // Create recognition task before installing tap
+        // Create recognition task
         recognitionTask = speechRecognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
             guard let self = self else { return }
             
@@ -160,23 +162,23 @@ class SpeechRecognizer: NSObject, ObservableObject {
             }
         }
         
+        // Important: Wait a bit before configuring audio
+        try await Task.sleep(for: .milliseconds(100))
+        
         // Prepare audio engine
         audioEngine.prepare()
         
-        // Synchronize tap installation
-        let semaphore = DispatchSemaphore(value: 0)
-        DispatchQueue.global(qos: .userInitiated).async {
-            // Install tap after preparing engine but before starting
-            inputNode.installTap(onBus: 0,
-                               bufferSize: 1024,
-                               format: recordingFormat) { [weak self] buffer, _ in
-                self?.recognitionRequest?.append(buffer)
-            }
-            semaphore.signal()
+        // Remove any existing tap first
+        if audioEngine.isRunning {
+            inputNode.removeTap(onBus: 0)
         }
         
-        // Wait for tap installation
-        _ = semaphore.wait(timeout: .now() + 1.0)
+        // Install new tap
+        inputNode.installTap(onBus: 0,
+                            bufferSize: 1024,
+                            format: recordingFormat) { [weak self] buffer, _ in
+            self?.recognitionRequest?.append(buffer)
+        }
         
         // Start audio engine
         try audioEngine.start()
@@ -251,18 +253,7 @@ class SpeechRecognizer: NSObject, ObservableObject {
     
     func stopListening() {
         print("🎤 SpeechRecognizer: Stopping listening for context: \(currentContext)")
-        
-        // Create a dispatch group to synchronize cleanup
-        let group = DispatchGroup()
-        
-        group.enter()
-        DispatchQueue.global(qos: .userInitiated).async {
-            self.stopCurrentRecognitionTask()
-            group.leave()
-        }
-        
-        // Wait for cleanup to complete
-        _ = group.wait(timeout: .now() + 1.0)
+        stopCurrentRecognitionTask()
         
         // Ensure state update happens on main thread
         DispatchQueue.main.async { [weak self] in
@@ -271,28 +262,15 @@ class SpeechRecognizer: NSObject, ObservableObject {
     }
     
     private func stopCurrentRecognitionTask() {
-        // Create a dispatch group to synchronize cleanup
-        let group = DispatchGroup()
-        
-        group.enter()
-        DispatchQueue.global(qos: .userInitiated).async {
-            // Stop audio engine first
-            if self.audioEngine.isRunning {
-                self.audioEngine.stop()
-                // Remove tap only if engine is running
-                if self.audioEngine.inputNode.numberOfInputs > 0 {
-                    self.audioEngine.inputNode.removeTap(onBus: 0)
-                }
+        // Stop audio engine first
+        if audioEngine.isRunning {
+            audioEngine.stop()
+            
+            // Remove tap with a slight delay to ensure proper cleanup
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                self?.audioEngine.inputNode.removeTap(onBus: 0)
             }
-            
-            // Reset the audio engine
-            self.audioEngine.reset()
-            
-            group.leave()
         }
-        
-        // Wait for cleanup to complete
-        _ = group.wait(timeout: .now() + 1.0)
         
         // Then cleanup recognition task
         recognitionTask?.cancel()
