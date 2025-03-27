@@ -34,6 +34,13 @@ class SoundManager {
         }
     }
     
+    // Add speech recognizer status check helper
+    private func canPlaySound(speechRecognizer: SpeechRecognizer? = nil) -> Bool {
+        // If no speech recognizer is provided, allow sound
+        guard let speechRecognizer = speechRecognizer else { return true }
+        return speechRecognizer.isListening && !speechRecognizer.hasError
+    }
+    
     func playStartSound() {
         startSound?.play()
     }
@@ -46,15 +53,23 @@ class SoundManager {
         stopSound?.play()
     }
     
-    func playReadySound() {
-        readySound?.play()
-    }
-       
-    func playSaveTakeSound() {
-        saveTakeSound?.play()
-    }
-    
     func getStopSoundDuration() -> TimeInterval {
         return stopSound?.duration ?? 0
+    }
+    
+    func playReadySound(speechRecognizer: SpeechRecognizer? = nil) {
+        guard canPlaySound(speechRecognizer: speechRecognizer) else {
+            print("🔊 SoundManager: Skipping ready sound - speech recognition not working")
+            return
+        }
+        readySound?.play()
+    }
+    
+    func playSaveTakeSound(speechRecognizer: SpeechRecognizer? = nil) {
+        guard canPlaySound(speechRecognizer: speechRecognizer) else {
+            print("🔊 SoundManager: Skipping save take sound - speech recognition not working")
+            return
+        }
+        saveTakeSound?.play()
     }
 }

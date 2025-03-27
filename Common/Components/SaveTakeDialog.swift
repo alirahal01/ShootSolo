@@ -1,10 +1,12 @@
 import SwiftUI
+import Combine
 
 struct SaveTakeDialog: View {
     let takeNumber: Int
     let onSave: () -> Void
     let onDiscard: () -> Void
     @ObservedObject var speechRecognizer: SpeechRecognizer
+    @State private var hasPlayedSound = false
     
     var body: some View {
         VStack(spacing: 20) {
@@ -50,8 +52,26 @@ struct SaveTakeDialog: View {
         .background(Color.white)
         .cornerRadius(16)
         .shadow(radius: 10)
+        .onChange(of: speechRecognizer.isListening) { isListening in
+            checkAndPlaySound()
+        }
+        .onChange(of: speechRecognizer.hasError) { hasError in
+            checkAndPlaySound()
+        }
         .onAppear {
-            SoundManager.shared.playSaveTakeSound()
+            // Reset the flag when dialog appears
+            hasPlayedSound = false
+            checkAndPlaySound()
+        }
+    }
+    
+    private func checkAndPlaySound() {
+        // Only play sound once when conditions are met
+        if !hasPlayedSound && 
+           speechRecognizer.isListening && 
+           !speechRecognizer.hasError {
+            SoundManager.shared.playSaveTakeSound(speechRecognizer: speechRecognizer)
+            hasPlayedSound = true
         }
     }
     

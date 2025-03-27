@@ -154,9 +154,11 @@ class CameraViewModel: ObservableObject {
             
             if speechRecognizer.isListening && !speechRecognizer.hasError {
                 print("📸 CameraViewModel: Speech recognition restarted successfully")
-                // Only play ready sound when returning from save dialog
+                // Only play ready sound when returning from save dialog AND speech recognition is working
                 if recordingState == .idle && context == .camera {
-                    SoundManager.shared.playReadySound()
+                    if speechRecognizer.isListening && !speechRecognizer.hasError {
+                        SoundManager.shared.playReadySound()
+                    }
                 }
             } else {
                 print("📸 CameraViewModel: Could not restart speech recognition - isListening: \(speechRecognizer.isListening), hasError: \(speechRecognizer.hasError)")
