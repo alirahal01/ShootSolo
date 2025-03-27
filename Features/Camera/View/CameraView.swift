@@ -80,22 +80,16 @@ struct CameraView: View {
                 if viewModel.showingSaveDialog {
                     SaveTakeDialog(
                         takeNumber: viewModel.currentTake,
-                        onSave: viewModel.saveTake,
-                        onDiscard: viewModel.discardTake,
+                        onSave: {
+                            print("📱 CameraView: Save action triggered")
+                            viewModel.saveTake()
+                        },
+                        onDiscard: {
+                            print("📱 CameraView: Discard action triggered")
+                            viewModel.discardTake()
+                        },
                         speechRecognizer: viewModel.speechRecognizer
                     )
-                    .onAppear {
-                        viewModel.speechRecognizer.stopListening()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak viewModel] in
-                            viewModel?.speechRecognizer.startListening(context: .saveDialog)
-                        }
-                    }
-                    .onDisappear {
-                        viewModel.speechRecognizer.stopListening()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak viewModel] in
-                            viewModel?.speechRecognizer.startListening(context: .camera)
-                        }
-                    }
                 }
             } else {
                 // Permission denied view
@@ -198,24 +192,21 @@ struct CameraView: View {
             }
         }
         .onAppear {
-            if !viewModel.showingSaveDialog {
-                viewModel.speechRecognizer.startListening(context: .camera)
-            }
-            // Prevent screen from auto-locking
+            print("📱 CameraView: View appeared")
+            // Always try to restart speech recognition on appear
+            viewModel.restartSpeechRecognition()
             UIApplication.shared.isIdleTimerDisabled = true
-            print("CameraView appeared, started listening") // Debug print
         }
         .onDisappear {
+            print("📱 CameraView: View disappeared")
             viewModel.speechRecognizer.stopListening()
-            // Re-enable screen auto-locking
             UIApplication.shared.isIdleTimerDisabled = false
-            print("CameraView disappeared, stopped listening") // Debug print
         }
         .onChange(of: scenePhase) { newPhase in
             if newPhase == .active {
-                if !viewModel.showingSaveDialog {
-                    viewModel.speechRecognizer.startListening(context: .camera)
-                }
+                // Always restart speech recognition when becoming active
+                viewModel.restartSpeechRecognition()
+                
                 // Only restart timer if was recording
                 if viewModel.isRecording {
                     viewModel.startTimer()

@@ -53,9 +53,6 @@ struct SaveTakeDialog: View {
         .onAppear {
             SoundManager.shared.playSaveTakeSound()
         }
-        .onDisappear {
-            speechRecognizer.stopListening()
-        }
     }
     
     private var statusText: String {
