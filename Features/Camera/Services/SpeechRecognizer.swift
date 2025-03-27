@@ -114,37 +114,37 @@ class SpeechRecognizer: NSObject, ObservableObject {
     
     private func startRecognition() async throws {
         guard let speechRecognizer = speechRecognizer, speechRecognizer.isAvailable else {
-            throw NSError(domain: "SpeechRecognizer", code: -1, userInfo: [NSLocalizedDescriptionKey: "Speech recognizer not available"])
+            throw NSError(domain: "SpeechRecognizer", code: -1, 
+                         userInfo: [NSLocalizedDescriptionKey: "Speech recognizer not available"])
         }
         
-        // Ensure audio session is active
-        do {
-            try AVAudioSession.sharedInstance().setActive(true)
-        } catch {
-            print("🎤❌ SpeechRecognizer: Failed to activate audio session: \(error)")
-            throw error
-        }
+        // First ensure we're fully stopped and cleaned up
+        stopCurrentRecognitionTask()
         
+        // Wait a moment to ensure cleanup is complete
+        try? await Task.sleep(for: .seconds(0.1))
+        
+        // Create new recognition request
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
         guard let recognitionRequest = recognitionRequest else {
-            throw NSError(domain: "SpeechRecognizer", code: -2, userInfo: [NSLocalizedDescriptionKey: "Could not create recognition request"])
+            throw NSError(domain: "SpeechRecognizer", code: -2, 
+                         userInfo: [NSLocalizedDescriptionKey: "Could not create recognition request"])
         }
         
         recognitionRequest.shouldReportPartialResults = true
         recognitionRequest.taskHint = .confirmation
         
+        // Configure audio engine and input node
         let inputNode = audioEngine.inputNode
+        
+        // Reset the audio engine
+        audioEngine.stop()
+        audioEngine.reset()
+        
+        // Get the recording format
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
-            self?.recognitionRequest?.append(buffer)
-        }
-        
-        // Prepare audio engine before creating recognition task
-        audioEngine.prepare()
-        try audioEngine.start()
-        
-        // Create recognition task
+        // Create recognition task before installing tap
         recognitionTask = speechRecognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
             guard let self = self else { return }
             
@@ -153,34 +153,65 @@ class SpeechRecognizer: NSObject, ObservableObject {
                 return
             }
             
-            if let result = result {
-                self.processResult(result)
+            DispatchQueue.main.async {
+                if let result = result {
+                    self.processResult(result)
+                }
             }
         }
         
-        isListening = true
-        hasError = false
-        errorMessage = nil
+        // Prepare audio engine
+        audioEngine.prepare()
+        
+        // Synchronize tap installation
+        let semaphore = DispatchSemaphore(value: 0)
+        DispatchQueue.global(qos: .userInitiated).async {
+            // Install tap after preparing engine but before starting
+            inputNode.installTap(onBus: 0,
+                               bufferSize: 1024,
+                               format: recordingFormat) { [weak self] buffer, _ in
+                self?.recognitionRequest?.append(buffer)
+            }
+            semaphore.signal()
+        }
+        
+        // Wait for tap installation
+        _ = semaphore.wait(timeout: .now() + 1.0)
+        
+        // Start audio engine
+        try audioEngine.start()
+        
+        // Ensure state updates happen on main thread
+        await MainActor.run {
+            isListening = true
+            hasError = false
+            errorMessage = nil
+        }
     }
     
     private func handleRecognitionError(_ error: Error) {
-        print("🎤❌ SpeechRecognizer: Recognition error: \(error.localizedDescription)")
-        let nsError = error as NSError
-        
-        switch nsError.domain {
-        case "kAFAssistantErrorDomain":
-            switch nsError.code {
-            case 1110, 1101:
-                errorMessage = "No speech detected"
+        // Ensure UI updates happen on main thread
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            print("🎤❌ SpeechRecognizer: Recognition error: \(error.localizedDescription)")
+            let nsError = error as NSError
+            
+            switch nsError.domain {
+            case "kAFAssistantErrorDomain":
+                switch nsError.code {
+                case 1110, 1101:
+                    self.errorMessage = "No speech detected"
+                default:
+                    self.errorMessage = "Recognition error occurred: \(error.localizedDescription)"
+                }
             default:
-                errorMessage = "Recognition error occurred: \(error.localizedDescription)"
+                self.errorMessage = "Recognition error occurred: \(error.localizedDescription)"
             }
-        default:
-            errorMessage = "Recognition error occurred: \(error.localizedDescription)"
+            
+            self.hasError = true
+            self.isListening = false
         }
-        
-        hasError = true
-        isListening = false
         
         // Try to recover from error
         Task { @MainActor in
@@ -220,16 +251,48 @@ class SpeechRecognizer: NSObject, ObservableObject {
     
     func stopListening() {
         print("🎤 SpeechRecognizer: Stopping listening for context: \(currentContext)")
-        stopCurrentRecognitionTask()
-        isListening = false
+        
+        // Create a dispatch group to synchronize cleanup
+        let group = DispatchGroup()
+        
+        group.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            self.stopCurrentRecognitionTask()
+            group.leave()
+        }
+        
+        // Wait for cleanup to complete
+        _ = group.wait(timeout: .now() + 1.0)
+        
+        // Ensure state update happens on main thread
+        DispatchQueue.main.async { [weak self] in
+            self?.isListening = false
+        }
     }
     
     private func stopCurrentRecognitionTask() {
-        // Stop audio engine first
-        if audioEngine.isRunning {
-            audioEngine.stop()
-            audioEngine.inputNode.removeTap(onBus: 0)
+        // Create a dispatch group to synchronize cleanup
+        let group = DispatchGroup()
+        
+        group.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            // Stop audio engine first
+            if self.audioEngine.isRunning {
+                self.audioEngine.stop()
+                // Remove tap only if engine is running
+                if self.audioEngine.inputNode.numberOfInputs > 0 {
+                    self.audioEngine.inputNode.removeTap(onBus: 0)
+                }
+            }
+            
+            // Reset the audio engine
+            self.audioEngine.reset()
+            
+            group.leave()
         }
+        
+        // Wait for cleanup to complete
+        _ = group.wait(timeout: .now() + 1.0)
         
         // Then cleanup recognition task
         recognitionTask?.cancel()
