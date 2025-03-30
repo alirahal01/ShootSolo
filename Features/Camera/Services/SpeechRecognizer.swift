@@ -187,10 +187,14 @@ class SpeechRecognizer: NSObject, ObservableObject {
         // Prepare audio engine
         audioEngine.prepare()
         
-        // Remove any existing tap first
+        // Ensure audio engine is stopped before proceeding
         if audioEngine.isRunning {
-            inputNode.removeTap(onBus: 0)
+            audioEngine.stop()
         }
+        
+        // Always try to remove tap regardless of engine state
+        // This is safer than only checking isRunning
+        try? inputNode.removeTap(onBus: 0)
         
         // Install new tap
         inputNode.installTap(onBus: 0,
