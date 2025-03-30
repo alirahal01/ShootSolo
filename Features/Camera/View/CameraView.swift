@@ -8,6 +8,7 @@ struct CameraView: View {
     @EnvironmentObject private var authState: AuthState
     @State private var showCameraAlert = false
     @State private var showMicrophoneAlert = false
+    @State private var wasShowingSaveDialog = false  // Add this to track dialog state
     
     init() {
         _viewModel = StateObject(wrappedValue: CameraViewModel())
@@ -246,6 +247,18 @@ struct CameraView: View {
             }
         } message: {
             Text("Please enable microphone access in Settings to record videos with audio")
+        }
+        .onChange(of: viewModel.showingSaveDialog) { isShowing in
+            if !isShowing && wasShowingSaveDialog {
+                // We just dismissed the save dialog
+                if viewModel.speechRecognizer.isListening && 
+                   !viewModel.speechRecognizer.hasError {
+                    // Play ready sound only when returning from save dialog
+                    // and speech recognition is working
+                    SoundManager.shared.playReadySound()
+                }
+            }
+            wasShowingSaveDialog = isShowing
         }
     }
     
