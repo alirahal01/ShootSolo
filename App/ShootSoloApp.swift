@@ -19,6 +19,8 @@ struct ShootSoloApp: App {
         WindowGroup {
             ContentView()
                 .environment(\.isStoreKitTest, ProcessInfo.processInfo.environment["STOREKIT_TEST"] == "1")
+                .environmentObject(authState)
+                .withNetworkStatusOverlay()
         }
     }
 } 

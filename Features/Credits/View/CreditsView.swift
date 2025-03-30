@@ -65,8 +65,10 @@ struct CreditsView: View {
                     },
                     showGuestOption: false
                 )
+                .withNetworkStatusOverlay()
             }
         }
+        .withNetworkStatusOverlay()
     }
     
     private var creditsContent: some View {

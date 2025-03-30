@@ -11,6 +11,7 @@ struct ShootSoloApp: App {
         WindowGroup {
             SplashScreen()
                 .environmentObject(authState)
+                .withNetworkStatusOverlay()
         }
     }
 }

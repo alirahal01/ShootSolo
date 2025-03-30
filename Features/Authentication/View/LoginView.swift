@@ -132,6 +132,7 @@ struct LoginView: View {
             .padding(.bottom, 20)
         }
         .padding()
+        .withNetworkStatusOverlay()
     }
 }
 
