@@ -278,46 +278,68 @@ struct CameraView: View {
         // Cancel existing subscription if any
         stateCancellable?.cancel()
         
-        // Combine the publishers we want to observe
-        stateCancellable = Publishers.CombineLatest4(
+        // Create a more readable and maintainable state observer using nested CombineLatest
+        // First combine the first two publishers (removing showingSaveDialog)
+        let publisher1 = Publishers.CombineLatest(
             viewModel.speechRecognizer.$isListening,
-            viewModel.speechRecognizer.$hasError,
-            viewModel.$showingSaveDialog,
-            viewModel.cameraManager.$isReady
+            viewModel.speechRecognizer.$hasError
+        )
+        
+        // Then combine with the remaining two
+        stateCancellable = Publishers.CombineLatest3(
+            publisher1,
+            viewModel.cameraManager.$isReady,
+            viewModel.$shouldPlayReadySound
         )
         .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
-        .sink { isListening, hasError, wasShowingDialog, cameraReady in
-            print("📱 State change - isListening: \(isListening), hasError: \(hasError), wasShowingDialog: \(wasShowingDialog), cameraReady: \(cameraReady)")
+        .sink { combined, cameraReady, shouldPlaySound in
+            // Destructure the first combined tuple
+            let (isListening, hasError) = combined
             
-            // Check all permissions including photo library
-            let photoLibraryPermissionGranted = PHPhotoLibrary.authorizationStatus() == .authorized || 
-                                               PHPhotoLibrary.authorizationStatus() == .limited
+            print("📱 State change - listening: \(isListening), error: \(hasError), cameraReady: \(cameraReady), shouldPlay: \(shouldPlaySound)")
             
-            // Only play sound if ALL conditions are met:
-            // 1. Speech recognizer is listening
-            // 2. No errors
-            // 3. Not showing save dialog
-            // 4. Camera is ready
-            // 5. All permissions are granted (camera, microphone, and photo library)
-            // 6. Not initializing
-            if isListening && 
-               !hasError && 
-               !wasShowingDialog && 
-               cameraReady && 
-               self.viewModel.cameraManager.permissionGranted && 
-               self.viewModel.cameraManager.microphonePermissionGranted &&
-               photoLibraryPermissionGranted &&
-               !self.viewModel.speechRecognizer.isInitializing {
+            // Check if we should play the ready sound
+            if self.shouldPlayReadySound(
+                isListening: isListening,
+                hasError: hasError,
+                cameraReady: cameraReady,
+                shouldPlaySound: shouldPlaySound
+            ) {
+                SoundManager.shared.playReadySound()
+                self.lastSoundPlayTime = Date()
+                print("📱 CameraView: Playing ready sound")
                 
-                let now = Date()
-                // Still keep the time check as additional safety
-                if now.timeIntervalSince(self.lastSoundPlayTime) >= 0.3 {
-                    SoundManager.shared.playReadySound()
-                    self.lastSoundPlayTime = now
-                    print("📱 CameraView: Playing ready sound")
-                }
+                // Reset the flag after playing
+                self.viewModel.readySoundWasPlayed()
             }
         }
+    }
+    
+    // Extract the sound playing logic to a separate method for clarity
+    private func shouldPlayReadySound(
+        isListening: Bool,
+        hasError: Bool,
+        cameraReady: Bool,
+        shouldPlaySound: Bool
+    ) -> Bool {
+        // Check all permissions including photo library
+        let photoLibraryPermissionGranted = PHPhotoLibrary.authorizationStatus() == .authorized || 
+                                           PHPhotoLibrary.authorizationStatus() == .limited
+        
+        // Check time since last sound played
+        let now = Date()
+        let sufficientTimePassed = now.timeIntervalSince(lastSoundPlayTime) >= 0.3
+        
+        // Only play sound if ALL conditions are met
+        return isListening && 
+               !hasError && 
+               cameraReady && 
+               viewModel.cameraManager.permissionGranted && 
+               viewModel.cameraManager.microphonePermissionGranted &&
+               photoLibraryPermissionGranted &&
+               !viewModel.speechRecognizer.isInitializing &&
+               shouldPlaySound &&
+               sufficientTimePassed
     }
     
     private func checkCameraPermission() {

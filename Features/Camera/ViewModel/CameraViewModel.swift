@@ -52,6 +52,9 @@ class CameraViewModel: ObservableObject {
     // Add a property to track initialization state
     @Published private(set) var isInitialized = false
     
+    // Add this property to CameraViewModel
+    @Published var shouldPlayReadySound = true
+    
     init(cameraManager: CameraManager = CameraManager()) {
         self.cameraManager = cameraManager
         self.speechRecognizer = SpeechRecognizer()
@@ -178,15 +181,18 @@ class CameraViewModel: ObservableObject {
             // Give a moment for the previous session to fully stop
             try? await Task.sleep(for: .seconds(0.3))
             
-            // Get the appropriate context
+            // Get the appropriate context based on current UI state
             let context: CommandContext = showingSaveDialog ? .saveDialog : .camera
             
-            print("📸 CameraViewModel: Force starting speech recognition with context: \(context)")
+            // Set flag to play ready sound when coming back from background
+            shouldPlayReadySound = true
+            
+            print("📸 CameraViewModel: Force starting speech recognition with context: \(context), showingSaveDialog: \(showingSaveDialog)")
             speechRecognizer.startListening(context: context)
             
             // Log the result
             try? await Task.sleep(for: .seconds(0.3))
-            print("📸 CameraViewModel: Force restart result - listening: \(speechRecognizer.isListening), error: \(speechRecognizer.hasError)")
+            print("📸 CameraViewModel: Force restart result - listening: \(speechRecognizer.isListening), error: \(speechRecognizer.hasError), context: \(context)")
         }
     }
     
@@ -259,6 +265,10 @@ class CameraViewModel: ObservableObject {
             guard let self = self else { return }
             try? await Task.sleep(for: .seconds(0.3))
             updateRecordingState(.idle)
+            
+            // Set flag to play ready sound after saving
+            shouldPlayReadySound = true
+            
             // Explicitly restart speech recognition
             restartSpeechRecognition()
         }
@@ -276,6 +286,10 @@ class CameraViewModel: ObservableObject {
             guard let self = self else { return }
             try? await Task.sleep(for: .seconds(0.3))
             updateRecordingState(.idle)
+            
+            // Set flag to play ready sound after discarding
+            shouldPlayReadySound = true
+            
             // Explicitly restart speech recognition
             restartSpeechRecognition()
         }
@@ -374,5 +388,10 @@ class CameraViewModel: ObservableObject {
         recordingTimer = nil
         
         print("CameraViewModel deinit completed")
+    }
+
+    // Add this method to reset the flag after sound is played
+    func readySoundWasPlayed() {
+        shouldPlayReadySound = false
     }
 }
