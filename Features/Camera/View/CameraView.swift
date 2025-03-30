@@ -1,6 +1,7 @@
 import SwiftUI
 import AVFoundation
 import Photos
+import Combine
 
 struct CameraView: View {
     @StateObject private var viewModel: CameraViewModel
@@ -8,7 +9,10 @@ struct CameraView: View {
     @EnvironmentObject private var authState: AuthState
     @State private var showCameraAlert = false
     @State private var showMicrophoneAlert = false
-    @State private var wasShowingSaveDialog = false  // Add this to track dialog state
+    @State private var lastSoundPlayTime = Date.distantPast
+    
+    // Combine cancellable
+    @State private var stateCancellable: AnyCancellable?
     
     init() {
         _viewModel = StateObject(wrappedValue: CameraViewModel())
@@ -194,33 +198,15 @@ struct CameraView: View {
         }
         .onAppear {
             print("📱 CameraView: View appeared")
-            // Always try to restart speech recognition on appear
+            setupStateObserver()
             viewModel.restartSpeechRecognition()
             UIApplication.shared.isIdleTimerDisabled = true
         }
         .onDisappear {
             print("📱 CameraView: View disappeared")
+            stateCancellable?.cancel()
             viewModel.speechRecognizer.stopListening()
             UIApplication.shared.isIdleTimerDisabled = false
-        }
-        .onChange(of: scenePhase) { newPhase in
-            if newPhase == .active {
-                // Always restart speech recognition when becoming active
-                viewModel.restartSpeechRecognition()
-                
-                // Only restart timer if was recording
-                if viewModel.isRecording {
-                    viewModel.startTimer()
-                }
-            } else if newPhase == .background || newPhase == .inactive {
-                if viewModel.isRecording {
-                    Task {
-                        await viewModel.stopRecording()
-                    }
-                }
-                viewModel.speechRecognizer.stopListening()
-                viewModel.stopTimer()
-            }
         }
         .sheet(isPresented: $viewModel.showingCreditsView) {
             CreditsView()
@@ -248,17 +234,31 @@ struct CameraView: View {
         } message: {
             Text("Please enable microphone access in Settings to record videos with audio")
         }
-        .onChange(of: viewModel.showingSaveDialog) { isShowing in
-            if !isShowing && wasShowingSaveDialog {
-                // We just dismissed the save dialog
-                if viewModel.speechRecognizer.isListening && 
-                   !viewModel.speechRecognizer.hasError {
-                    // Play ready sound only when returning from save dialog
-                    // and speech recognition is working
+    }
+    
+    private func setupStateObserver() {
+        // Cancel existing subscription if any
+        stateCancellable?.cancel()
+        
+        // Combine the publishers we want to observe
+        stateCancellable = Publishers.CombineLatest3(
+            viewModel.speechRecognizer.$isListening,
+            viewModel.speechRecognizer.$hasError,
+            viewModel.$showingSaveDialog
+        )
+        .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
+        .sink { isListening, hasError, wasShowingDialog in
+            print("📱 State change - isListening: \(isListening), hasError: \(hasError), wasShowingDialog: \(wasShowingDialog)")
+            
+            if isListening && !hasError && !wasShowingDialog {
+                let now = Date()
+                // Still keep the time check as additional safety
+                if now.timeIntervalSince(self.lastSoundPlayTime) >= 0.3 {
                     SoundManager.shared.playReadySound()
+                    self.lastSoundPlayTime = now
+                    print("📱 CameraView: Playing ready sound")
                 }
             }
-            wasShowingSaveDialog = isShowing
         }
     }
     

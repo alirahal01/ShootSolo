@@ -23,6 +23,11 @@ class SpeechRecognizer: NSObject, ObservableObject {
     private var isStarting = false
     private var isAuthorized = false
     
+    // Add a flag to track if we're being deallocated
+    private var isBeingDeallocated = false
+    
+    private var isInBackground = false
+    
     init(settingsManager: SettingsManager = SettingsManager.shared) {
         self.speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
         self.settingsManager = settingsManager
@@ -69,8 +74,22 @@ class SpeechRecognizer: NSObject, ObservableObject {
         }
     }
     
+    // Add method to handle app state changes
+    func handleAppStateChange(isBackground: Bool) {
+        isInBackground = isBackground
+        if isBackground {
+            stopListening()
+        }
+    }
+    
     func startListening(context: CommandContext) {
         print("🎤 SpeechRecognizer: Starting listening for context: \(context)")
+        
+        // Add guard for background state
+        guard !isInBackground else {
+            print("🎤 SpeechRecognizer: Cannot start in background")
+            return
+        }
         
         // Check authorization first
         guard isAuthorized else {
@@ -251,25 +270,47 @@ class SpeechRecognizer: NSObject, ObservableObject {
         }
     }
     
+    func cleanup() {
+        isBeingDeallocated = true
+        stopListening()
+        
+        // Ensure audio session is deactivated
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setActive(false)
+        } catch {
+            print("🎤 SpeechRecognizer: Error deactivating audio session: \(error)")
+        }
+        
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        recognitionRequest = nil
+        
+        // Synchronously update state to avoid async issues
+        isListening = false
+        hasError = false
+        errorMessage = nil
+    }
+    
     func stopListening() {
+        // Guard against calls during deallocation
+        guard !isBeingDeallocated else { return }
+        
         print("🎤 SpeechRecognizer: Stopping listening for context: \(currentContext)")
         stopCurrentRecognitionTask()
         
-        // Ensure state update happens on main thread
-        DispatchQueue.main.async { [weak self] in
-            self?.isListening = false
-        }
+        // Update state synchronously instead of async
+        isListening = false
     }
     
     private func stopCurrentRecognitionTask() {
+        // Guard against calls during deallocation
+        guard !isBeingDeallocated else { return }
+        
         // Stop audio engine first
         if audioEngine.isRunning {
             audioEngine.stop()
-            
-            // Remove tap with a slight delay to ensure proper cleanup
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-                self?.audioEngine.inputNode.removeTap(onBus: 0)
-            }
+            audioEngine.inputNode.removeTap(onBus: 0)
         }
         
         // Then cleanup recognition task
@@ -282,6 +323,6 @@ class SpeechRecognizer: NSObject, ObservableObject {
     }
     
     deinit {
-        stopListening()
+        cleanup()
     }
 }

@@ -135,28 +135,23 @@ class CameraViewModel: ObservableObject {
         
         Task { @MainActor in
             // Give a moment for the previous session to fully stop
-            try? await Task.sleep(for: .seconds(0.5))  // Increased delay
+            try? await Task.sleep(for: .seconds(0.5))
             
             // Start new listening session with appropriate context
             let context: CommandContext = showingSaveDialog ? .saveDialog : .camera
             
-            if speechRecognizer.hasError {
-                print("📸 CameraViewModel: Speech recognizer has error, attempting to recover")
-                // Try to recover by stopping and starting again
-                speechRecognizer.stopListening()
-                try? await Task.sleep(for: .seconds(0.5))
-            }
-            
-            speechRecognizer.startListening(context: context)
-            
-            // Wait a moment to check if start was successful
-            try? await Task.sleep(for: .seconds(0.3))
-            
-            if speechRecognizer.isListening && !speechRecognizer.hasError {
-                print("📸 CameraViewModel: Speech recognition restarted successfully")
-                // Remove the ready sound from here - it will only be played in saveTake() and discardTake()
-            } else {
-                print("📸 CameraViewModel: Could not restart speech recognition - isListening: \(speechRecognizer.isListening), hasError: \(speechRecognizer.hasError)")
+            // Only start if we're in an appropriate state
+            if !speechRecognizer.hasError {
+                speechRecognizer.startListening(context: context)
+                
+                // Wait a moment to check if start was successful
+                try? await Task.sleep(for: .seconds(0.3))
+                
+                if speechRecognizer.isListening {
+                    print("📸 CameraViewModel: Speech recognition restarted successfully")
+                } else {
+                    print("📸 CameraViewModel: Could not restart speech recognition")
+                }
             }
         }
     }
@@ -333,7 +328,8 @@ class CameraViewModel: ObservableObject {
     deinit {
         print("CameraViewModel deinit started")
         
-        // Clear any remaining closures and clean up resources
+        // Clean up speech recognizer first
+        speechRecognizer.cleanup()
         speechRecognizer.onCommandDetected = nil
         
         // Cancel all subscriptions
