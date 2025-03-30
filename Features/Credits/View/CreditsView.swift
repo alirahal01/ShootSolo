@@ -33,39 +33,39 @@ struct CreditsView: View {
                     }
                 }
             }
-        }
-        .onAppear {
-            // Check if guest user and show login
-            if authState.isGuestUser {
-                showingLoginView = true
+            .onAppear {
+                // Check if guest user and show login
+                if authState.isGuestUser {
+                    showingLoginView = true
+                }
+                
+                #if DEBUG
+                // Check if we're running with StoreKit configuration
+                isTestEnvironment = Bundle.main.path(
+                    forResource: "StoreKitConfig",
+                    ofType: "storekit"
+                ) != nil
+                print("Products available: \(creditsManager.products.map { $0.id })")
+                #endif
+                
+                // If there's no ad loaded and not currently loading, trigger a load
+                if adViewModel.rewardedAd == nil && !adViewModel.isLoading {
+                    adViewModel.loadAd()
+                }
             }
-            
-            #if DEBUG
-            // Check if we're running with StoreKit configuration
-            isTestEnvironment = Bundle.main.path(
-                forResource: "StoreKitConfig",
-                ofType: "storekit"
-            ) != nil
-            print("Products available: \(creditsManager.products.map { $0.id })")
-            #endif
-            
-            // If there's no ad loaded and not currently loading, trigger a load
-            if adViewModel.rewardedAd == nil && !adViewModel.isLoading {
-                adViewModel.loadAd()
+            .fullScreenCover(isPresented: $showingLoginView) {
+                LoginView(
+                    onLoginStart: {},
+                    onLoginSuccess: {
+                        showingLoginView = false
+                        // Refresh credits after login
+                        Task {
+                            try? await creditsManager.fetchCreditsFromFirestore()
+                        }
+                    },
+                    showGuestOption: false
+                )
             }
-        }
-        .fullScreenCover(isPresented: $showingLoginView) {
-            LoginView(
-                onLoginStart: {},
-                onLoginSuccess: {
-                    showingLoginView = false
-                    // Refresh credits after login
-                    Task {
-                        try? await creditsManager.fetchCreditsFromFirestore()
-                    }
-                },
-                showGuestOption: false
-            )
         }
     }
     
@@ -181,8 +181,29 @@ struct CreditsView: View {
                     }
                     .disabled(adViewModel.rewardedAd == nil || isLoadingAd)
                     
-                    if !adViewModel.lastFailureReason.userMessage.isEmpty {
-                        Text(adViewModel.lastFailureReason.userMessage)
+                    // Error messages
+                    let adError = adViewModel.lastFailureReason.userMessage
+                    let creditsError = creditsManager.error ?? ""
+                    
+                    if !adError.isEmpty && !creditsError.isEmpty {
+                        if adError.contains("No internet connection") && creditsError.contains("No internet connection") {
+                            Text("No internet connection. Please check your connection and try again.")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                                .padding(.top, 4)
+                        } else {
+                            Text("\(adError) | \(creditsError)")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                                .padding(.top, 4)
+                        }
+                    } else if !adError.isEmpty {
+                        Text(adError)
+                            .font(.caption)
+                            .foregroundColor(.red)
+                            .padding(.top, 4)
+                    } else if !creditsError.isEmpty {
+                        Text(creditsError)
                             .font(.caption)
                             .foregroundColor(.red)
                             .padding(.top, 4)
