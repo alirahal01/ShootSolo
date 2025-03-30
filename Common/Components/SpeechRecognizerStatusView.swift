@@ -8,7 +8,9 @@ struct SpeechRecognizerStatusView: View {
     
     var body: some View {
         Button(action: {
-            if speechRecognizer.hasError {
+            // Restart listening regardless of whether there's an error or it's just not listening
+            if !speechRecognizer.isListening || speechRecognizer.hasError {
+                // No need to call resetError() as startListening() handles error reset internally
                 speechRecognizer.startListening(context: context)
             }
         }) {
@@ -50,10 +52,8 @@ struct SpeechRecognizerStatusView: View {
     }
     
     private var backgroundColor: Color {
-        if speechRecognizer.hasError {
-            return .red
-        }
-        return speechRecognizer.isListening ? .green : .gray.opacity(0.8)
+        // Only green when actively listening with no errors, red in all other cases
+        return (speechRecognizer.isListening && !speechRecognizer.hasError) ? .green : .red
     }
 }
 
@@ -76,7 +76,7 @@ struct SpeechRecognizerStatusView: View {
                     errorRecognizer.errorMessage = "Error"
                 }
             
-            // Inactive state
+            // Inactive state (will show as red)
             let inactiveRecognizer = SpeechRecognizer()
             SpeechRecognizerStatusView(speechRecognizer: inactiveRecognizer, context: .camera)
         }

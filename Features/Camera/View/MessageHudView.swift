@@ -32,7 +32,9 @@ struct MessageHUDView: View {
     
     private var instructionText: String {
         if speechRecognizer.hasError {
-            return "<- Tap refresh to start listening"
+            return "<- Tap to restart listening"
+        } else if !speechRecognizer.isListening {
+            return "<- Tap to start listening"
         } else {
             return "Listening...\nSay \"\(settingsManager.settings.selectedStartKeyword.rawValue)\" to start,\n\"\(settingsManager.settings.selectedStopKeyword.rawValue)\" to stop."
         }
