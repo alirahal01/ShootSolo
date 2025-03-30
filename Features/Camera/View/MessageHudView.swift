@@ -19,10 +19,23 @@ struct MessageHUDView: View {
             SpeechRecognizerStatusView(speechRecognizer: speechRecognizer, context: context)
             
             // Command Instructions
-            Text(instructionText)
-                .font(.system(size: 14))
-                .foregroundColor(.white)
-                .multilineTextAlignment(.leading)
+            if speechRecognizer.isInitializing {
+                HStack(spacing: 6) {
+                    Text("Initializing...")
+                        .font(.system(size: 14))
+                        .foregroundColor(.white)
+                    
+                    // Add a progress indicator
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(0.7)
+                }
+            } else {
+                Text(instructionText)
+                    .font(.system(size: 14))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.leading)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)

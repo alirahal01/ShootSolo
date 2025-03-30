@@ -199,7 +199,14 @@ struct CameraView: View {
         .onAppear {
             print("📱 CameraView: View appeared")
             setupStateObserver()
-            viewModel.restartSpeechRecognition()
+            
+            // Only restart speech recognition if it's not already initializing
+            if !viewModel.speechRecognizer.isInitializing {
+                viewModel.restartSpeechRecognition()
+            } else {
+                print("📱 CameraView: Speech recognizer is initializing, not restarting")
+            }
+            
             UIApplication.shared.isIdleTimerDisabled = true
         }
         .onDisappear {
@@ -233,6 +240,37 @@ struct CameraView: View {
             }
         } message: {
             Text("Please enable microphone access in Settings to record videos with audio")
+        }
+        .onChange(of: scenePhase) { newPhase in
+            print("📱 CameraView: Scene phase changed to \(newPhase)")
+            
+            switch newPhase {
+            case .active:
+                // App came to foreground
+                print("📱 CameraView: App became active")
+                
+                // First notify speech recognizer about state change
+                viewModel.speechRecognizer.handleAppStateChange(isBackground: false)
+                
+                // Then force restart speech recognition after a short delay
+                // This ensures the audio session has time to activate properly
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    print("📱 CameraView: Force restarting speech recognition after background")
+                    viewModel.forceRestartSpeechRecognition()
+                }
+                
+            case .inactive:
+                // App is transitioning between states
+                print("📱 CameraView: App became inactive")
+                
+            case .background:
+                // App went to background
+                print("📱 CameraView: App went to background")
+                viewModel.speechRecognizer.handleAppStateChange(isBackground: true)
+                
+            @unknown default:
+                break
+            }
         }
     }
     

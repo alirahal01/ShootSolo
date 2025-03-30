@@ -15,6 +15,7 @@ class SpeechRecognizer: NSObject, ObservableObject {
     @Published var isListening = false
     @Published var hasError = false
     @Published var errorMessage: String?
+    @Published var isInitializing = true
     
     var onCommandDetected: ((String) -> Void)?
     
@@ -41,15 +42,29 @@ class SpeechRecognizer: NSObject, ObservableObject {
                     self?.isAuthorized = true
                     self?.setupAudioSession()
                     self?.hasError = false
+                    
+                    // After initialization completes successfully, automatically start listening
+                    // We'll use a small delay to ensure everything is set up properly
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                        guard let self = self, !self.isListening, !self.isBeingDeallocated else { return }
+                        print("🎤 SpeechRecognizer: Auto-starting after initialization")
+                        self.startListening(context: self.currentContext)
+                    }
+                    
                 case .denied, .restricted, .notDetermined:
                     self?.isAuthorized = false
                     self?.hasError = true
                     self?.errorMessage = "Speech recognition not authorized"
+                    self?.isInitializing = false
                 @unknown default:
+                    self?.isInitializing = false
                     break
                 }
             }
         }
+        
+        // Debug log for initialization
+        print("🎤 SpeechRecognizer: Initialized, waiting for authorization")
     }
     
     private func setupAudioSession() {
@@ -66,19 +81,37 @@ class SpeechRecognizer: NSObject, ObservableObject {
             // Reset error state after successful setup
             hasError = false
             errorMessage = nil
+            isInitializing = false
             
         } catch {
             print("Audio session setup failed: \(error)")
             hasError = true
             errorMessage = "Audio session setup failed"
+            isInitializing = false
         }
     }
     
     // Add method to handle app state changes
     func handleAppStateChange(isBackground: Bool) {
-        isInBackground = isBackground
+        print("🎤 SpeechRecognizer: App state changed, isBackground: \(isBackground)")
+        
         if isBackground {
+            // App went to background, stop listening and mark as background
+            self.isInBackground = true
             stopListening()
+            print("🎤 SpeechRecognizer: Stopped listening due to background state")
+        } else {
+            // App came to foreground, reset background flag
+            self.isInBackground = false
+            
+            // Force reset the listening state to ensure we're in a clean state
+            // The CameraView will handle restarting
+            if isListening {
+                print("🎤 SpeechRecognizer: Resetting stale listening state after background")
+                isListening = false
+            }
+            
+            print("🎤 SpeechRecognizer: Ready for restart after returning from background")
         }
     }
     
@@ -96,6 +129,7 @@ class SpeechRecognizer: NSObject, ObservableObject {
             print("🎤❌ SpeechRecognizer: Not authorized")
             hasError = true
             errorMessage = "Speech recognition not authorized"
+            isInitializing = false
             return
         }
         
@@ -106,6 +140,7 @@ class SpeechRecognizer: NSObject, ObservableObject {
         }
         
         isStarting = true
+        isInitializing = true
         
         // Reset error state when starting
         hasError = false
@@ -123,10 +158,12 @@ class SpeechRecognizer: NSObject, ObservableObject {
             do {
                 try await startRecognition()
                 isStarting = false
+                isInitializing = false
             } catch {
                 print("🎤❌ SpeechRecognizer: Failed to start: \(error)")
                 handleRecognitionError(error)
                 isStarting = false
+                isInitializing = false
             }
         }
     }
@@ -211,6 +248,7 @@ class SpeechRecognizer: NSObject, ObservableObject {
             isListening = true
             hasError = false
             errorMessage = nil
+            isInitializing = false
         }
     }
     
@@ -236,6 +274,7 @@ class SpeechRecognizer: NSObject, ObservableObject {
             
             self.hasError = true
             self.isListening = false
+            self.isInitializing = false
         }
         
         // Try to recover from error
@@ -294,6 +333,7 @@ class SpeechRecognizer: NSObject, ObservableObject {
         isListening = false
         hasError = false
         errorMessage = nil
+        isInitializing = false
     }
     
     func stopListening() {
@@ -301,10 +341,12 @@ class SpeechRecognizer: NSObject, ObservableObject {
         guard !isBeingDeallocated else { return }
         
         print("🎤 SpeechRecognizer: Stopping listening for context: \(currentContext)")
-        stopCurrentRecognitionTask()
         
-        // Update state synchronously instead of async
+        // First update state to avoid race conditions
         isListening = false
+        
+        // Then stop the recognition task
+        stopCurrentRecognitionTask()
     }
     
     private func stopCurrentRecognitionTask() {

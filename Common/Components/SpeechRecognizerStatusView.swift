@@ -22,7 +22,12 @@ struct SpeechRecognizerStatusView: View {
                 
                 // Icon
                 Group {
-                    if speechRecognizer.hasError {
+                    if speechRecognizer.isInitializing {
+                        // Show loading indicator during initialization
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(0.7)
+                    } else if speechRecognizer.hasError {
                         Image(systemName: "arrow.clockwise")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
@@ -36,6 +41,7 @@ struct SpeechRecognizerStatusView: View {
                 }
             }
         }
+        .disabled(speechRecognizer.isInitializing) // Disable the button during initialization
         .onChange(of: speechRecognizer.isListening) { isListening in
             if isListening {
                 // Start animation when listening
@@ -52,6 +58,9 @@ struct SpeechRecognizerStatusView: View {
     }
     
     private var backgroundColor: Color {
+        if speechRecognizer.isInitializing {
+            return .red // Use orange color to indicate initializing state
+        }
         // Only green when actively listening with no errors, red in all other cases
         return (speechRecognizer.isListening && !speechRecognizer.hasError) ? .green : .red
     }

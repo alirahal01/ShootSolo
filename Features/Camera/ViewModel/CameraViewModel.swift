@@ -118,9 +118,12 @@ class CameraViewModel: ObservableObject {
         // Wait a moment for components to settle
         try? await Task.sleep(for: .seconds(0.5))
         
-        // Initialize speech recognition
-        if !speechRecognizer.isListening && !speechRecognizer.hasError {
+        // Check if speech recognizer is already listening or initializing
+        if !speechRecognizer.isListening && !speechRecognizer.isInitializing && !speechRecognizer.hasError {
+            print("📸 CameraViewModel: Starting speech recognition during initialization")
             speechRecognizer.startListening(context: .camera)
+        } else {
+            print("📸 CameraViewModel: Speech recognizer state during init - listening: \(speechRecognizer.isListening), initializing: \(speechRecognizer.isInitializing), hasError: \(speechRecognizer.hasError)")
         }
         
         isInitialized = true
@@ -129,6 +132,12 @@ class CameraViewModel: ObservableObject {
     // Add a method to restart speech recognition
     func restartSpeechRecognition() {
         print("📸 CameraViewModel: Attempting to restart speech recognition")
+        
+        // Don't restart if still initializing
+        if speechRecognizer.isInitializing {
+            print("📸 CameraViewModel: Speech recognizer is still initializing, not restarting")
+            return
+        }
         
         // Stop any existing session first
         speechRecognizer.stopListening()
@@ -142,6 +151,7 @@ class CameraViewModel: ObservableObject {
             
             // Only start if we're in an appropriate state
             if !speechRecognizer.hasError {
+                print("📸 CameraViewModel: Restarting speech recognition with context: \(context)")
                 speechRecognizer.startListening(context: context)
                 
                 // Wait a moment to check if start was successful
@@ -153,6 +163,30 @@ class CameraViewModel: ObservableObject {
                     print("📸 CameraViewModel: Could not restart speech recognition")
                 }
             }
+        }
+    }
+    
+    // Add this new method for forced restart after background
+    func forceRestartSpeechRecognition() {
+        print("📸 CameraViewModel: Force restarting speech recognition after background")
+        
+        // First stop any existing session
+        speechRecognizer.stopListening()
+        
+        // Then start a new session with a clean state
+        Task { @MainActor in
+            // Give a moment for the previous session to fully stop
+            try? await Task.sleep(for: .seconds(0.3))
+            
+            // Get the appropriate context
+            let context: CommandContext = showingSaveDialog ? .saveDialog : .camera
+            
+            print("📸 CameraViewModel: Force starting speech recognition with context: \(context)")
+            speechRecognizer.startListening(context: context)
+            
+            // Log the result
+            try? await Task.sleep(for: .seconds(0.3))
+            print("📸 CameraViewModel: Force restart result - listening: \(speechRecognizer.isListening), error: \(speechRecognizer.hasError)")
         }
     }
     
