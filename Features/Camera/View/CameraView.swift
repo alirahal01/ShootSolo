@@ -279,16 +279,36 @@ struct CameraView: View {
         stateCancellable?.cancel()
         
         // Combine the publishers we want to observe
-        stateCancellable = Publishers.CombineLatest3(
+        stateCancellable = Publishers.CombineLatest4(
             viewModel.speechRecognizer.$isListening,
             viewModel.speechRecognizer.$hasError,
-            viewModel.$showingSaveDialog
+            viewModel.$showingSaveDialog,
+            viewModel.cameraManager.$isReady
         )
         .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
-        .sink { isListening, hasError, wasShowingDialog in
-            print("📱 State change - isListening: \(isListening), hasError: \(hasError), wasShowingDialog: \(wasShowingDialog)")
+        .sink { isListening, hasError, wasShowingDialog, cameraReady in
+            print("📱 State change - isListening: \(isListening), hasError: \(hasError), wasShowingDialog: \(wasShowingDialog), cameraReady: \(cameraReady)")
             
-            if isListening && !hasError && !wasShowingDialog {
+            // Check all permissions including photo library
+            let photoLibraryPermissionGranted = PHPhotoLibrary.authorizationStatus() == .authorized || 
+                                               PHPhotoLibrary.authorizationStatus() == .limited
+            
+            // Only play sound if ALL conditions are met:
+            // 1. Speech recognizer is listening
+            // 2. No errors
+            // 3. Not showing save dialog
+            // 4. Camera is ready
+            // 5. All permissions are granted (camera, microphone, and photo library)
+            // 6. Not initializing
+            if isListening && 
+               !hasError && 
+               !wasShowingDialog && 
+               cameraReady && 
+               self.viewModel.cameraManager.permissionGranted && 
+               self.viewModel.cameraManager.microphonePermissionGranted &&
+               photoLibraryPermissionGranted &&
+               !self.viewModel.speechRecognizer.isInitializing {
+                
                 let now = Date()
                 // Still keep the time check as additional safety
                 if now.timeIntervalSince(self.lastSoundPlayTime) >= 0.3 {
