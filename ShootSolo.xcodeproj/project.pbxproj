@@ -64,6 +64,8 @@
 		9FC2A5032D50FD1D0009C689 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC2A5022D50FD1D0009C689 /* SoundManager.swift */; };
 		9FCE495C2D9A078500C0CB91 /* NetworkStatusOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FCE495B2D9A078500C0CB91 /* NetworkStatusOverlay.swift */; };
 		9FCE495F2D9A079000C0CB91 /* NetworkStatusModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FCE495D2D9A079000C0CB91 /* NetworkStatusModifier.swift */; };
+		9FCE49612D9AEC5700C0CB91 /* ModalTrackingModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FCE49602D9AEC5700C0CB91 /* ModalTrackingModifier.swift */; };
+		9FCE49632D9AEC5D00C0CB91 /* ModalPresentationModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FCE49622D9AEC5D00C0CB91 /* ModalPresentationModifier.swift */; };
 		9FDE68282D72399100DEDDDB /* FileNameGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FDE68262D72399100DEDDDB /* FileNameGenerator.swift */; };
 		9FDE682A2D748CA600DEDDDB /* GuestCreditsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FDE68292D748CA600DEDDDB /* GuestCreditsManager.swift */; };
 		9FDE682E2D7E216000DEDDDB /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FDE682D2D7E216000DEDDDB /* NetworkMonitor.swift */; };
@@ -144,6 +146,8 @@
 		9FC2A5022D50FD1D0009C689 /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
 		9FCE495B2D9A078500C0CB91 /* NetworkStatusOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkStatusOverlay.swift; sourceTree = "<group>"; };
 		9FCE495D2D9A079000C0CB91 /* NetworkStatusModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkStatusModifier.swift; sourceTree = "<group>"; };
+		9FCE49602D9AEC5700C0CB91 /* ModalTrackingModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalTrackingModifier.swift; sourceTree = "<group>"; };
+		9FCE49622D9AEC5D00C0CB91 /* ModalPresentationModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalPresentationModifier.swift; sourceTree = "<group>"; };
 		9FDE68262D72399100DEDDDB /* FileNameGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileNameGenerator.swift; sourceTree = "<group>"; };
 		9FDE68292D748CA600DEDDDB /* GuestCreditsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuestCreditsManager.swift; sourceTree = "<group>"; };
 		9FDE682D2D7E216000DEDDDB /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
@@ -492,6 +496,8 @@
 		9FCE495E2D9A079000C0CB91 /* Modifiers */ = {
 			isa = PBXGroup;
 			children = (
+				9FCE49602D9AEC5700C0CB91 /* ModalTrackingModifier.swift */,
+				9FCE49622D9AEC5D00C0CB91 /* ModalPresentationModifier.swift */,
 				9FCE495D2D9A079000C0CB91 /* NetworkStatusModifier.swift */,
 			);
 			path = Modifiers;
@@ -683,6 +689,7 @@
 				9F4598D62D2DDA2F002981C9 /* LoadingHUD.swift in Sources */,
 				9F4598962D2DDA2A002981C9 /* SaveTakeDialog.swift in Sources */,
 				9F4598C92D2DDA2F002981C9 /* CameraViewModel.swift in Sources */,
+				9FCE49612D9AEC5700C0CB91 /* ModalTrackingModifier.swift in Sources */,
 				9F4598D02D2DDA2F002981C9 /* SpeechRecognizer.swift in Sources */,
 				9F45989C2D2DDA2A002981C9 /* AuthState.swift in Sources */,
 				9F4598DF2D33387B002981C9 /* CreditsView.swift in Sources */,
@@ -692,6 +699,7 @@
 				9F4598C82D2DDA2F002981C9 /* SettingsManager.swift in Sources */,
 				9F4598D22D2DDA2F002981C9 /* LoginViewModel.swift in Sources */,
 				9F4598972D2DDA2A002981C9 /* RecordingTimerView.swift in Sources */,
+				9FCE49632D9AEC5D00C0CB91 /* ModalPresentationModifier.swift in Sources */,
 				9F45989B2D2DDA2A002981C9 /* LoadingView.swift in Sources */,
 				9F4598C72D2DDA2F002981C9 /* AdvancedSettingsView.swift in Sources */,
 				9FDE68302D8B0F3C00DEDDDB /* SplashScreen.swift in Sources */,

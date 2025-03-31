@@ -53,7 +53,7 @@ class CameraViewModel: ObservableObject {
     @Published private(set) var isInitialized = false
     
     // Add this property to CameraViewModel
-    @Published var shouldPlayReadySound = true
+    @Published var shouldPlayReadySound = false
     
     init(cameraManager: CameraManager = CameraManager()) {
         self.cameraManager = cameraManager
@@ -185,7 +185,7 @@ class CameraViewModel: ObservableObject {
             let context: CommandContext = showingSaveDialog ? .saveDialog : .camera
             
             // Set flag to play ready sound when coming back from background
-            shouldPlayReadySound = true
+            shouldPlayReadySound = false
             
             print("📸 CameraViewModel: Force starting speech recognition with context: \(context), showingSaveDialog: \(showingSaveDialog)")
             speechRecognizer.startListening(context: context)

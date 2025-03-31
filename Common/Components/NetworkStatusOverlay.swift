@@ -11,7 +11,7 @@ struct NetworkStatusOverlay: View {
         ZStack {
             if !networkMonitor.isConnected {
                 // Full screen semi-transparent background with red tint
-                Color.red.opacity(0.2)
+                Color.gray.opacity(0.8)
                     .edgesIgnoringSafeArea(.all)
                 
                 // Animated background
