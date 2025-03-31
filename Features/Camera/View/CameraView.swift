@@ -110,23 +110,28 @@ struct CameraView: View {
                 .offset(y: 20) // Changed from 40 to 20 for toolbar spacing
             }
             
-            // Controls overlay
-            cameraControlsOverlay
-            
-            // Save Dialog
-            if viewModel.showingSaveDialog {
-                SaveTakeDialog(
-                    takeNumber: viewModel.currentTake,
-                    onSave: {
-                        print("📱 CameraView: Save action triggered")
-                        viewModel.saveTake()
-                    },
-                    onDiscard: {
-                        print("📱 CameraView: Discard action triggered")
-                        viewModel.discardTake()
-                    },
-                    speechRecognizer: viewModel.speechRecognizer
-                )
+            // Controls overlay - only show when save dialog is not visible
+            if !viewModel.showingSaveDialog {
+                cameraControlsOverlay
+            } else {
+                // Save Dialog - centered in the same position as controls
+                VStack {
+                    Spacer()
+                    
+                    SaveTakeDialog(
+                        takeNumber: viewModel.currentTake,
+                        onSave: {
+                            print("📱 CameraView: Save action triggered")
+                            viewModel.saveTake()
+                        },
+                        onDiscard: {
+                            print("📱 CameraView: Discard action triggered")
+                            viewModel.discardTake()
+                        },
+                        speechRecognizer: viewModel.speechRecognizer
+                    )
+                    .padding(.bottom, 100) // Position it above where the controls would be
+                }
             }
         }
     }
