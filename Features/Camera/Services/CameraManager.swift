@@ -148,6 +148,7 @@ class CameraManager: NSObject, ObservableObject {
         
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
             print("Failed to get camera device")
+            session.commitConfiguration()
             isReady = false
             return
         }
@@ -160,6 +161,7 @@ class CameraManager: NSObject, ObservableObject {
                 session.addInput(input)
             } else {
                 print("Could not add video input")
+                session.commitConfiguration()
                 isReady = false
                 return
             }
@@ -171,6 +173,7 @@ class CameraManager: NSObject, ObservableObject {
                     session.addOutput(videoOutput)
                 } else {
                     print("Could not add video output")
+                    session.commitConfiguration()
                     isReady = false
                     return
                 }
@@ -194,6 +197,7 @@ class CameraManager: NSObject, ObservableObject {
             // Set session preset after configuring inputs and outputs
             session.sessionPreset = .hd1920x1080
             
+            // IMPORTANT: Commit configuration before starting the session
             session.commitConfiguration()
             
             // Start session on background thread

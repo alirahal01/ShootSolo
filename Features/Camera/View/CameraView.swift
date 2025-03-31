@@ -2,6 +2,7 @@ import SwiftUI
 import AVFoundation
 import Photos
 import Combine
+import Speech
 
 struct CameraView: View {
     @StateObject private var viewModel: CameraViewModel
@@ -9,6 +10,8 @@ struct CameraView: View {
     @EnvironmentObject private var authState: AuthState
     @State private var showCameraAlert = false
     @State private var showMicrophoneAlert = false
+    @State private var showSpeechRecognitionAlert = false
+    @State private var showPhotoLibraryAlert = false
     @State private var lastSoundPlayTime = Date.distantPast
     
     // Combine cancellable
@@ -26,6 +29,17 @@ struct CameraView: View {
     // Add this property to track when we've just returned from system UI
     @State private var systemUICooldownActive = false
     
+    // Track which permission screen to show
+    @State private var currentPermissionCheck: PermissionType?
+    
+    // Define permission types
+    enum PermissionType {
+        case camera
+        case microphone
+        case speechRecognition
+        case photoLibrary
+    }
+    
     init() {
         _viewModel = StateObject(wrappedValue: CameraViewModel())
     }
@@ -41,14 +55,7 @@ struct CameraView: View {
                     .withNetworkStatusOverlay()
                     .trackModalPresentation(isPresented: $isModalPresented)
             }
-            // Alerts
-            .alert("Session Expired", isPresented: $authState.showAuthAlert) {
-                Button("Sign In", role: .destructive) {
-                    authState.isLoggedIn = false
-                }
-            } message: {
-                Text("Your session has expired. Please sign in again to continue.")
-            }
+            // Permission alerts
             .alert("Camera Access Required", isPresented: $showCameraAlert) {
                 Button("Cancel", role: .cancel) { }
                 Button("Open Settings") {
@@ -65,6 +72,30 @@ struct CameraView: View {
             } message: {
                 Text("Please enable microphone access in Settings to record videos with audio")
             }
+            .alert("Speech Recognition Required", isPresented: $showSpeechRecognitionAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Open Settings") {
+                    openSettings()
+                }
+            } message: {
+                Text("Please enable speech recognition in Settings to use voice commands")
+            }
+            .alert("Photo Library Access Required", isPresented: $showPhotoLibraryAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Open Settings") {
+                    openSettings()
+                }
+            } message: {
+                Text("Please enable photo library access in Settings to save your videos")
+            }
+            // Alerts
+            .alert("Session Expired", isPresented: $authState.showAuthAlert) {
+                Button("Sign In", role: .destructive) {
+                    authState.isLoggedIn = false
+                }
+            } message: {
+                Text("Your session has expired. Please sign in again to continue.")
+            }
             .onChange(of: scenePhase, perform: handleScenePhaseChange)
             .onReceive(NetworkMonitor.shared.$isConnected) { isConnected in
                 // Track when network alert is visible
@@ -78,10 +109,10 @@ struct CameraView: View {
         ZStack {
             Color.black.edgesIgnoringSafeArea(.all)
             
-            if viewModel.cameraManager.permissionGranted {
-                cameraPreviewContent
-            } else {
+            if !areAllPermissionsGranted() {
                 permissionDeniedContent
+            } else {
+                cameraPreviewContent
             }
         }
     }
@@ -197,8 +228,8 @@ struct CameraView: View {
     private var permissionButtons: some View {
         VStack(spacing: 15) {
             if shouldShowCameraButton() {
-                Button("Check Camera") {
-                    checkCameraPermission()
+                Button("Enable Camera") {
+                    openSettings()
                 }
                 .padding()
                 .background(Color.red)
@@ -207,8 +238,28 @@ struct CameraView: View {
             }
             
             if shouldShowMicrophoneButton() {
-                Button("Check Microphone") {
-                    checkMicrophonePermission()
+                Button("Enable Microphone") {
+                    openSettings()
+                }
+                .padding()
+                .background(Color.red)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+            }
+            
+            if shouldShowSpeechRecognitionButton() {
+                Button("Enable Speech Recognition") {
+                    openSettings()
+                }
+                .padding()
+                .background(Color.red)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+            }
+            
+            if shouldShowPhotoLibraryButton() {
+                Button("Enable Photo Library Access") {
+                    openSettings()
                 }
                 .padding()
                 .background(Color.red)
@@ -302,17 +353,12 @@ struct CameraView: View {
     
     private func handleAppear() {
         print("📱 CameraView: View appeared")
-        setupStateObserver()
+        
+        // First check all permissions
+        checkAllPermissions()
+        
+        // Only set up observers - actual initialization will happen after permissions
         setupNotificationObservers()
-        
-        // Only restart speech recognition if it's not already initializing
-        if !viewModel.speechRecognizer.isInitializing {
-            viewModel.restartSpeechRecognition()
-        } else {
-            print("📱 CameraView: Speech recognizer is initializing, not restarting")
-        }
-        
-        UIApplication.shared.isIdleTimerDisabled = true
         
         // Reset flags
         isModalPresented = false
@@ -523,7 +569,224 @@ struct CameraView: View {
         )
     }
     
-    // MARK: - Helper Methods
+    // MARK: - Permission Checking
+    
+    private func checkAllPermissions() {
+        // Start with camera permission since it's the most fundamental for this app
+        checkCameraPermission()
+    }
+    
+    private func checkCameraPermission() {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            // Camera permission granted, move to microphone
+            checkMicrophonePermission()
+        case .denied, .restricted:
+            showCameraAlert = true
+            currentPermissionCheck = .camera
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        // Move to next permission check
+                        self.checkMicrophonePermission()
+                    } else {
+                        self.showCameraAlert = true
+                        self.currentPermissionCheck = .camera
+                    }
+                }
+            }
+        @unknown default:
+            break
+        }
+    }
+    
+    private func checkMicrophonePermission() {
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized:
+            // Microphone permission granted, check photo library next
+            // (Speech recognition depends on microphone, so check photo library first)
+            checkPhotoLibraryPermission()
+        case .denied, .restricted:
+            showMicrophoneAlert = true
+            currentPermissionCheck = .microphone
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .audio) { granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        // Move to next permission check
+                        self.checkPhotoLibraryPermission()
+                    } else {
+                        self.showMicrophoneAlert = true
+                        self.currentPermissionCheck = .microphone
+                    }
+                }
+            }
+        @unknown default:
+            break
+        }
+    }
+    
+    private func checkPhotoLibraryPermission() {
+        let status = PHPhotoLibrary.authorizationStatus()
+        switch status {
+        case .authorized, .limited:
+            // Photo library permission granted, check speech recognition last
+            // (Speech recognition is the most complex and depends on microphone)
+            checkSpeechRecognitionPermission()
+        case .denied, .restricted:
+            showPhotoLibraryAlert = true
+            currentPermissionCheck = .photoLibrary
+        case .notDetermined:
+            PHPhotoLibrary.requestAuthorization { status in
+                DispatchQueue.main.async {
+                    if status == .authorized || status == .limited {
+                        // Move to next permission check
+                        self.checkSpeechRecognitionPermission()
+                    } else {
+                        self.showPhotoLibraryAlert = true
+                        self.currentPermissionCheck = .photoLibrary
+                    }
+                }
+            }
+        @unknown default:
+            break
+        }
+    }
+    
+    private func checkSpeechRecognitionPermission() {
+        switch SFSpeechRecognizer.authorizationStatus() {
+        case .authorized:
+            // All permissions granted, now initialize systems
+            initializeAfterPermissionsGranted()
+        case .denied, .restricted:
+            showSpeechRecognitionAlert = true
+            currentPermissionCheck = .speechRecognition
+        case .notDetermined:
+            SFSpeechRecognizer.requestAuthorization { status in
+                DispatchQueue.main.async {
+                    if status == .authorized {
+                        // All permissions granted, now initialize systems
+                        self.initializeAfterPermissionsGranted()
+                    } else {
+                        self.showSpeechRecognitionAlert = true
+                        self.currentPermissionCheck = .speechRecognition
+                    }
+                }
+            }
+        @unknown default:
+            break
+        }
+    }
+    
+    private func initializeAfterPermissionsGranted() {
+        print("📱 CameraView: All permissions granted, initializing systems")
+        
+        // First initialize camera
+        viewModel.cameraManager.setupCamera()
+        
+        // Then set up state observer
+        setupStateObserver()
+        
+        // Finally initialize speech recognition after a short delay
+        // This ensures audio session conflicts are minimized
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            if !self.viewModel.speechRecognizer.isInitializing {
+                self.viewModel.restartSpeechRecognition()
+            }
+        }
+        
+        // Disable idle timer
+        UIApplication.shared.isIdleTimerDisabled = true
+    }
+    
+    private func areAllPermissionsGranted() -> Bool {
+        let cameraPermission = AVCaptureDevice.authorizationStatus(for: .video) == .authorized
+        let microphonePermission = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
+        let speechPermission = SFSpeechRecognizer.authorizationStatus() == .authorized
+        let photoLibraryPermission = PHPhotoLibrary.authorizationStatus() == .authorized || 
+                                    PHPhotoLibrary.authorizationStatus() == .limited
+        
+        return cameraPermission && microphonePermission && speechPermission && photoLibraryPermission
+    }
+    
+    // MARK: - Permission Helper Methods
+    
+    private var permissionDeniedTitle: String {
+        switch currentPermissionCheck {
+        case .camera:
+            return "Camera Access Required"
+        case .microphone:
+            return "Microphone Access Required"
+        case .speechRecognition:
+            return "Speech Recognition Required"
+        case .photoLibrary:
+            return "Photo Library Access Required"
+        case nil:
+            // If multiple permissions are missing, show a general message
+            return "Permissions Required"
+        }
+    }
+    
+    private var permissionDeniedMessage: String {
+        switch currentPermissionCheck {
+        case .camera:
+            return "Please enable camera access in Settings to use this feature"
+        case .microphone:
+            return "Please enable microphone access in Settings to record videos with audio"
+        case .speechRecognition:
+            return "Please enable speech recognition in Settings to use voice commands"
+        case .photoLibrary:
+            return "Please enable photo library access in Settings to save your videos"
+        case nil:
+            // If multiple permissions are missing, show a general message
+            return "Please enable all required permissions in Settings to use this app"
+        }
+    }
+    
+    private func getPermissionIcon() -> String {
+        switch currentPermissionCheck {
+        case .camera:
+            return "camera.slash.fill"
+        case .microphone:
+            return "mic.slash.fill"
+        case .speechRecognition:
+            return "waveform.slash"
+        case .photoLibrary:
+            return "photo.slash.fill"
+        case nil:
+            // Default icon if no specific permission is being checked
+            return "exclamationmark.triangle.fill"
+        }
+    }
+    
+    private func shouldShowCameraButton() -> Bool {
+        return AVCaptureDevice.authorizationStatus(for: .video) == .denied || 
+               AVCaptureDevice.authorizationStatus(for: .video) == .restricted
+    }
+    
+    private func shouldShowMicrophoneButton() -> Bool {
+        return AVCaptureDevice.authorizationStatus(for: .audio) == .denied || 
+               AVCaptureDevice.authorizationStatus(for: .audio) == .restricted
+    }
+    
+    private func shouldShowSpeechRecognitionButton() -> Bool {
+        return SFSpeechRecognizer.authorizationStatus() == .denied || 
+               SFSpeechRecognizer.authorizationStatus() == .restricted
+    }
+    
+    private func shouldShowPhotoLibraryButton() -> Bool {
+        let status = PHPhotoLibrary.authorizationStatus()
+        return status == .denied || status == .restricted
+    }
+    
+    private func openSettings() {
+        if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(settingsUrl)
+        }
+    }
+    
+    // MARK: - Sound Playback Logic
     
     private func shouldPlayReadySound(
         isListening: Bool,
@@ -564,110 +827,7 @@ struct CameraView: View {
         return now.timeIntervalSince(lastSoundPlayTime) >= 0.3
     }
     
-    private func areAllPermissionsGranted() -> Bool {
-        let photoLibraryPermissionGranted = PHPhotoLibrary.authorizationStatus() == .authorized || 
-                                           PHPhotoLibrary.authorizationStatus() == .limited
-        
-        return viewModel.cameraManager.permissionGranted && 
-               viewModel.cameraManager.microphonePermissionGranted &&
-               photoLibraryPermissionGranted
-    }
-    
     private func isSpeechRecognizerReady(isListening: Bool, hasError: Bool) -> Bool {
         return isListening && !hasError && !viewModel.speechRecognizer.isInitializing
-    }
-    
-    private func checkCameraPermission() {
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .denied, .restricted:
-            showCameraAlert = true
-        case .notDetermined:
-            AVCaptureDevice.requestAccess(for: .video) { granted in
-                DispatchQueue.main.async {
-                    if !granted {
-                        showCameraAlert = true
-                    }
-                }
-            }
-        default:
-            break
-        }
-    }
-    
-    private func checkMicrophonePermission() {
-        if !viewModel.cameraManager.microphonePermissionGranted {
-            switch AVCaptureDevice.authorizationStatus(for: .audio) {
-            case .denied, .restricted:
-                showMicrophoneAlert = true
-            case .notDetermined:
-                AVCaptureDevice.requestAccess(for: .audio) { granted in
-                    DispatchQueue.main.async {
-                        if !granted {
-                            self.showMicrophoneAlert = true
-                        } else {
-                            // Reinitialize camera setup if needed
-                            self.viewModel.cameraManager.setupCamera()
-                        }
-                    }
-                }
-            default:
-                break
-            }
-        }
-    }
-    
-    private func openSettings() {
-        if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
-            UIApplication.shared.open(settingsUrl)
-        }
-    }
-    
-    // MARK: - Permission Helper Properties
-    
-    private var permissionDeniedTitle: String {
-        if !viewModel.cameraManager.permissionGranted && !viewModel.cameraManager.microphonePermissionGranted {
-            return "Camera & Microphone Access Required"
-        } else if !viewModel.cameraManager.permissionGranted {
-            return "Camera Access Required"
-        } else {
-            return "Microphone Access Required"
-        }
-    }
-    
-    private var permissionDeniedMessage: String {
-        if !viewModel.cameraManager.permissionGranted && !viewModel.cameraManager.microphonePermissionGranted {
-            return "Please enable both camera and microphone access in Settings to use this feature"
-        } else if !viewModel.cameraManager.permissionGranted {
-            return "Please enable camera access in Settings to use this feature"
-        } else {
-            return "Please enable microphone access in Settings to record videos with audio"
-        }
-    }
-    
-    private func getPermissionIcon() -> String {
-        if shouldShowCameraButton() {
-            return "camera.slash.fill"
-        } else if shouldShowMicrophoneButton() {
-            return "mic.slash.fill"
-        }
-        return "camera.slash.fill" // Default icon
-    }
-    
-    private func shouldShowCameraButton() -> Bool {
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .denied, .restricted:
-            return true
-        default:
-            return false
-        }
-    }
-    
-    private func shouldShowMicrophoneButton() -> Bool {
-        switch AVCaptureDevice.authorizationStatus(for: .audio) {
-        case .denied, .restricted:
-            return true
-        default:
-            return false
-        }
     }
 }
