@@ -18,24 +18,11 @@ struct MessageHUDView: View {
             // Speech Recognizer Status
             SpeechRecognizerStatusView(speechRecognizer: speechRecognizer, context: context)
             
-            // Command Instructions
-            if speechRecognizer.isInitializing {
-                HStack(spacing: 6) {
-                    Text("Initializing...")
-                        .font(.system(size: 14))
-                        .foregroundColor(.white)
-                    
-                    // Add a progress indicator
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .scaleEffect(0.7)
-                }
-            } else {
-                Text(instructionText)
-                    .font(.system(size: 14))
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.leading)
-            }
+            // Command Instructions or Status
+            Text(statusText)
+                .font(.system(size: 14))
+                .foregroundColor(textColor)
+                .multilineTextAlignment(.leading)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -43,13 +30,28 @@ struct MessageHUDView: View {
         .cornerRadius(40)
     }
     
-    private var instructionText: String {
-        if speechRecognizer.hasError {
+    private var statusText: String {
+        if speechRecognizer.isInitializing {
+            return "Initializing..."
+        } else if speechRecognizer.hasError {
             return "<- Tap to restart listening"
         } else if !speechRecognizer.isListening {
             return "<- Tap to start listening"
         } else {
-            return "Listening...\nSay \"\(settingsManager.settings.selectedStartKeyword.rawValue)\" to start,\n\"\(settingsManager.settings.selectedStopKeyword.rawValue)\" to stop."
+            switch context {
+            case .camera:
+                return "Listening...\nSay \"\(settingsManager.settings.selectedStartKeyword.rawValue)\" to start,\n\"\(settingsManager.settings.selectedStopKeyword.rawValue)\" to stop."
+            case .saveDialog:
+                return "Listening...\nSay \"yes\" to save,\n\"no\" to discard."
+            }
+        }
+    }
+    
+    private var textColor: Color {
+        if speechRecognizer.hasError {
+            return .red
+        } else  {
+            return .white
         }
     }
 }

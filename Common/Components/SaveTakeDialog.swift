@@ -13,8 +13,8 @@ struct SaveTakeDialog: View {
             Text("Save Take \(takeNumber)?")
                 .font(.headline)
             
-            if let errorMessage = speechRecognizer.errorMessage {
-                Text(errorMessage)
+            if speechRecognizer.hasError {
+                Text(speechRecognizer.errorMessage ?? "Error occurred")
                     .font(.subheadline)
                     .foregroundColor(.red)
                     .multilineTextAlignment(.center)
@@ -59,9 +59,11 @@ struct SaveTakeDialog: View {
             checkAndPlaySound()
         }
         .onAppear {
-            // Reset the flag when dialog appears
             hasPlayedSound = false
             checkAndPlaySound()
+            
+            // Force start listening in save dialog context
+            speechRecognizer.startListening(context: .saveDialog)
         }
     }
     
@@ -76,8 +78,12 @@ struct SaveTakeDialog: View {
     }
     
     private var statusText: String {
-        if speechRecognizer.hasError {
-            return "<- Tap refresh to start listening"
+        if speechRecognizer.isInitializing {
+            return "Starting up..."
+        } else if !speechRecognizer.isListening {
+            return "<- Tap to start listening"
+        } else if speechRecognizer.isWaitingForSpeech {
+            return "Listening for YES or NO..."
         } else {
             return "Listening for YES or NO..."
         }

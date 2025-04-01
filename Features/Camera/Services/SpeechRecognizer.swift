@@ -10,12 +10,13 @@ class SpeechRecognizer: NSObject, ObservableObject {
     private let speechRecognizer: SFSpeechRecognizer?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
-    private let audioEngine = AVAudioEngine()
     
     @Published var isListening = false
     @Published var hasError = false
     @Published var errorMessage: String?
     @Published var isInitializing = true
+    @Published var isWaitingForSpeech = false
+    @Published var lastDetectedCommand: String?
     
     var onCommandDetected: ((String) -> Void)?
     
@@ -34,257 +35,191 @@ class SpeechRecognizer: NSObject, ObservableObject {
         self.settingsManager = settingsManager
         super.init()
         
-        // Request speech recognition authorization on init
+        print("🎤 SpeechRecognizer: Initializing...")
+        
+        // Request speech recognition authorization
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
+            print("🎤 SpeechRecognizer: Authorization status: \(status)")
+            
             DispatchQueue.main.async {
                 switch status {
                 case .authorized:
+                    print("🎤 SpeechRecognizer: Authorization granted")
                     self?.isAuthorized = true
-                    self?.setupAudioSession()
                     self?.hasError = false
+                    self?.isInitializing = false
                     
-                    // After initialization completes successfully, automatically start listening
-                    // We'll use a small delay to ensure everything is set up properly
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                        guard let self = self, !self.isListening, !self.isBeingDeallocated else { return }
-                        print("🎤 SpeechRecognizer: Auto-starting after initialization")
-                        self.startListening(context: self.currentContext)
+                    // Try to start listening after authorization
+                    if let self = self {
+                        print("🎤 SpeechRecognizer: Auto-starting after authorization")
+                        self.startListening(context: .camera)
                     }
                     
-                case .denied, .restricted, .notDetermined:
-                    self?.isAuthorized = false
-                    self?.hasError = true
-                    self?.errorMessage = "Speech recognition not authorized"
-                    self?.isInitializing = false
+                case .denied:
+                    print("🎤 SpeechRecognizer: Authorization denied")
+                    self?.handleAuthorizationFailure("Speech recognition denied")
+                case .restricted:
+                    print("🎤 SpeechRecognizer: Authorization restricted")
+                    self?.handleAuthorizationFailure("Speech recognition restricted")
+                case .notDetermined:
+                    print("🎤 SpeechRecognizer: Authorization not determined")
+                    self?.handleAuthorizationFailure("Speech recognition not authorized")
                 @unknown default:
-                    self?.isInitializing = false
-                    break
+                    print("🎤 SpeechRecognizer: Unknown authorization status")
+                    self?.handleAuthorizationFailure("Unknown authorization status")
                 }
             }
         }
-        
-        // Debug log for initialization
-        print("🎤 SpeechRecognizer: Initialized, waiting for authorization")
     }
     
-    private func setupAudioSession() {
-        do {
-            let audioSession = AVAudioSession.sharedInstance()
-            // First deactivate the session
-            try? audioSession.setActive(false)
-            
-            try audioSession.setCategory(.playAndRecord,
-                                      mode: .default,
-                                      options: [.allowBluetooth, .mixWithOthers])
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-            
-            // Reset error state after successful setup
-            hasError = false
-            errorMessage = nil
-            isInitializing = false
-            
-        } catch {
-            print("Audio session setup failed: \(error)")
-            hasError = true
-            errorMessage = "Audio session setup failed"
-            isInitializing = false
-        }
-    }
-    
-    // Add method to handle app state changes
-    func handleAppStateChange(isBackground: Bool) {
-        print("🎤 SpeechRecognizer: App state changed, isBackground: \(isBackground)")
-        
-        if isBackground {
-            // App went to background, stop listening and mark as background
-            self.isInBackground = true
-            stopListening()
-            print("🎤 SpeechRecognizer: Stopped listening due to background state")
-        } else {
-            // App came to foreground, reset background flag
-            self.isInBackground = false
-            
-            // Force reset the listening state to ensure we're in a clean state
-            // The CameraView will handle restarting
-            if isListening {
-                print("🎤 SpeechRecognizer: Resetting stale listening state after background")
-                isListening = false
-            }
-            
-            print("🎤 SpeechRecognizer: Ready for restart after returning from background")
-        }
+    private func handleAuthorizationFailure(_ message: String) {
+        isAuthorized = false
+        hasError = true
+        errorMessage = message
+        isInitializing = false
+        print("🎤 SpeechRecognizer: Authorization failed - \(message)")
     }
     
     func startListening(context: CommandContext) {
-        print("🎤 SpeechRecognizer: Starting listening for context: \(context)")
+        print("🎤 Starting speech recognition for context: \(context), current state - isListening: \(isListening), isStarting: \(isStarting), hasError: \(hasError)")
         
-        // Add guard for background state
-        guard !isInBackground else {
-            print("🎤 SpeechRecognizer: Cannot start in background")
+        // Don't restart if already listening to same context
+        if isListening && currentContext == context && !hasError {
+            print("🎤 Already listening to context: \(context)")
             return
         }
         
-        // Check authorization first
         guard isAuthorized else {
-            print("🎤❌ SpeechRecognizer: Not authorized")
+            print("🎤 Cannot start - not authorized")
             hasError = true
             errorMessage = "Speech recognition not authorized"
+            return
+        }
+        
+        // Force reset if in a bad state
+        if isStarting || hasError {
+            print("🎤 Force resetting state before starting")
+            stopListening()
+            isStarting = false
+            hasError = false
+        }
+        
+        guard let sr = speechRecognizer, sr.isAvailable else {
+            print("🎤 Speech recognizer not available")
+            hasError = true
+            errorMessage = "Speech recognizer not available"
+            return
+        }
+        
+        print("🎤 Starting speech recognition for context: \(context)")
+        
+        // Stop any existing recognition first
+        stopListening()
+        
+        // Don't set isInitializing when switching contexts
+        if context != currentContext {
+            print("🎤 Switching context from \(currentContext) to \(context)")
             isInitializing = false
-            return
         }
         
-        // Prevent multiple simultaneous start attempts
-        guard !isStarting else {
-            print("🎤 SpeechRecognizer: Already starting, ignoring request")
-            return
-        }
-        
+        // Update state immediately to show we're starting
         isStarting = true
-        isInitializing = true
-        
-        // Reset error state when starting
+        isListening = false
         hasError = false
-        errorMessage = nil
+        errorMessage = "Initializing speech recognition..."
         currentContext = context
         
-        // First, ensure we're fully stopped
-        stopCurrentRecognitionTask()
-        
-        // Ensure audio session is properly set up
-        setupAudioSession()
-        
-        // Then start fresh
-        Task { @MainActor in
-            do {
-                try await startRecognition()
-                isStarting = false
-                isInitializing = false
-            } catch {
-                print("🎤❌ SpeechRecognizer: Failed to start: \(error)")
-                handleRecognitionError(error)
-                isStarting = false
-                isInitializing = false
-            }
-        }
-    }
-    
-    private func startRecognition() async throws {
-        guard let speechRecognizer = speechRecognizer, speechRecognizer.isAvailable else {
-            throw NSError(domain: "SpeechRecognizer", code: -1, 
-                         userInfo: [NSLocalizedDescriptionKey: "Speech recognizer not available"])
-        }
-        
-        // First ensure we're fully stopped and cleaned up
-        stopCurrentRecognitionTask()
-        
-        // Reset audio session
-        do {
-            let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setActive(false)
-            try audioSession.setCategory(.playAndRecord, mode: .default)
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-        } catch {
-            print("🎤❌ SpeechRecognizer: Failed to configure audio session: \(error)")
-            throw error
-        }
+        print("🎤 States after initial setup - isStarting: \(isStarting), isListening: \(isListening), isInitializing: \(isInitializing)")
         
         // Create new recognition request
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
         guard let recognitionRequest = recognitionRequest else {
-            throw NSError(domain: "SpeechRecognizer", code: -2, 
-                         userInfo: [NSLocalizedDescriptionKey: "Could not create recognition request"])
+            print("🎤 Could not create recognition request")
+            isStarting = false
+            hasError = true
+            errorMessage = "Failed to create recognition request"
+            return
         }
         
         recognitionRequest.shouldReportPartialResults = true
         recognitionRequest.taskHint = .confirmation
         
-        // Configure audio engine and input node
-        let inputNode = audioEngine.inputNode
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        print("🎤 Creating recognition task...")
         
-        // Create recognition task
-        recognitionTask = speechRecognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
-            guard let self = self else { return }
+        // Create recognition task with detailed logging
+        recognitionTask = sr.recognitionTask(with: recognitionRequest) { [weak self] result, error in
+            guard let self = self else {
+                print("🎤 Self was deallocated in recognition task")
+                return
+            }
+            
+            // Set listening state immediately when task starts
+            DispatchQueue.main.async {
+                // Always update isStarting regardless of previous state
+                self.isStarting = false
+                
+                if error == nil {
+                    self.isListening = true
+                    self.hasError = false
+                    self.errorMessage = nil
+                    print("🎤 Speech recognition task started - isListening now true")
+                }
+            }
             
             if let error = error {
+                print("🎤 Speech recognition error: \(error.localizedDescription)")
                 self.handleRecognitionError(error)
                 return
             }
             
-            DispatchQueue.main.async {
-                if let result = result {
+            if let result = result {
+                print("🎤 Recognition result: \(result.bestTranscription.formattedString)")
+                DispatchQueue.main.async {
                     self.processResult(result)
                 }
             }
         }
         
-        // Important: Wait a bit before configuring audio
-        try await Task.sleep(for: .milliseconds(100))
-        
-        // Prepare audio engine
-        audioEngine.prepare()
-        
-        // Ensure audio engine is stopped before proceeding
-        if audioEngine.isRunning {
-            audioEngine.stop()
-        }
-        
-        // Always try to remove tap regardless of engine state
-        // This is safer than only checking isRunning
-        try? inputNode.removeTap(onBus: 0)
-        
-        // Install new tap
-        inputNode.installTap(onBus: 0,
-                            bufferSize: 1024,
-                            format: recordingFormat) { [weak self] buffer, _ in
-            self?.recognitionRequest?.append(buffer)
-        }
-        
-        // Start audio engine
-        try audioEngine.start()
-        
-        // Ensure state updates happen on main thread
-        await MainActor.run {
-            isListening = true
-            hasError = false
-            errorMessage = nil
-            isInitializing = false
+        // If task creation failed immediately
+        if recognitionTask == nil {
+            print("🎤 Failed to create recognition task")
+            isStarting = false
+            hasError = true
+            errorMessage = "Failed to create recognition task"
         }
     }
     
     private func handleRecognitionError(_ error: Error) {
-        // Ensure UI updates happen on main thread
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
-            print("🎤❌ SpeechRecognizer: Recognition error: \(error.localizedDescription)")
-            let nsError = error as NSError
-            
-            switch nsError.domain {
-            case "kAFAssistantErrorDomain":
-                switch nsError.code {
-                case 1110, 1101:
-                    self.errorMessage = "No speech detected"
-                default:
-                    self.errorMessage = "Recognition error occurred: \(error.localizedDescription)"
-                }
-            default:
-                self.errorMessage = "Recognition error occurred: \(error.localizedDescription)"
+        print("🎤❌ SpeechRecognizer: Recognition error: \(error.localizedDescription)")
+
+        // If it's the "no speech detected" error, set waiting state
+        if error.localizedDescription.contains("No speech detected") {
+            print("🎤 No speech detected, continuing to listen...")
+            DispatchQueue.main.async {
+                self.isWaitingForSpeech = true
+                // Keep listening state true
+                self.isListening = true
+                self.hasError = false
             }
-            
+            return
+        }
+        
+        // For real errors, set error state
+        DispatchQueue.main.async {
             self.hasError = true
             self.isListening = false
             self.isInitializing = false
-        }
-        
-        // Try to recover from error
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(0.5))
-            setupAudioSession()  // Try to reset audio session
+            self.isWaitingForSpeech = false
+            self.errorMessage = error.localizedDescription
         }
     }
-    
+
     private func processResult(_ result: SFSpeechRecognitionResult) {
+        // When we get any result, we're not waiting anymore
+        DispatchQueue.main.async {
+            self.isWaitingForSpeech = false
+        }
+        
         let text = result.bestTranscription.formattedString.lowercased()
         let words = text.components(separatedBy: .whitespacesAndNewlines)
         
@@ -293,43 +228,53 @@ class SpeechRecognizer: NSObject, ObservableObject {
             if words.count >= 2 {
                 let lastTwoWords = Array(words.suffix(2)).joined(separator: " ")
                 if settingsManager.isStartCommand(lastTwoWords) {
-                    print("🎤 SpeechRecognizer: Detected START command")
+                    print("🎤 ✅ ✅ ✅ SpeechRecognizer: Detected START command: '\(lastTwoWords)'")
+                    DispatchQueue.main.async {
+                        self.lastDetectedCommand = "START"
+                    }
                     onCommandDetected?("start")
                 } else if settingsManager.isStopCommand(lastTwoWords) {
-                    print("🎤 SpeechRecognizer: Detected STOP command")
+                    print("🎤 ✅ ✅ ✅ SpeechRecognizer: Detected STOP command: '\(lastTwoWords)'")
+                    DispatchQueue.main.async {
+                        self.lastDetectedCommand = "STOP"
+                    }
                     onCommandDetected?("stop")
                 }
             }
         case .saveDialog:
             if let lastWord = words.last {
                 if lastWord == "yes" {
-                    print("🎤 SpeechRecognizer: Detected YES command")
+                    print("🎤 ✅ ✅ ✅ SpeechRecognizer: Detected YES command")
+                    DispatchQueue.main.async {
+                        self.lastDetectedCommand = "YES"
+                    }
                     onCommandDetected?("yes")
                 } else if lastWord == "no" {
-                    print("🎤 SpeechRecognizer: Detected NO command")
+                    print("🎤 ✅ ✅ ✅ SpeechRecognizer: Detected NO command")
+                    DispatchQueue.main.async {
+                        self.lastDetectedCommand = "NO"
+                    }
                     onCommandDetected?("no")
                 }
             }
+        }
+        
+        // Clear last detected command after a delay
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2.0))
+            self.lastDetectedCommand = nil
         }
     }
     
     func cleanup() {
         isBeingDeallocated = true
-        stopListening()
         
-        // Ensure audio session is deactivated
-        do {
-            let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setActive(false)
-        } catch {
-            print("🎤 SpeechRecognizer: Error deactivating audio session: \(error)")
-        }
+        stopListening()
         
         recognitionTask?.cancel()
         recognitionTask = nil
         recognitionRequest = nil
         
-        // Synchronously update state to avoid async issues
         isListening = false
         hasError = false
         errorMessage = nil
@@ -337,38 +282,56 @@ class SpeechRecognizer: NSObject, ObservableObject {
     }
     
     func stopListening() {
-        // Guard against calls during deallocation
-        guard !isBeingDeallocated else { return }
-        
-        print("🎤 SpeechRecognizer: Stopping listening for context: \(currentContext)")
-        
-        // First update state to avoid race conditions
         isListening = false
         
-        // Then stop the recognition task
-        stopCurrentRecognitionTask()
-    }
-    
-    private func stopCurrentRecognitionTask() {
-        // Guard against calls during deallocation
-        guard !isBeingDeallocated else { return }
-        
-        // Stop audio engine first
-        if audioEngine.isRunning {
-            audioEngine.stop()
-            audioEngine.inputNode.removeTap(onBus: 0)
-        }
-        
-        // Then cleanup recognition task
         recognitionTask?.cancel()
         recognitionTask = nil
-        
-        // Finally cleanup request
         recognitionRequest?.endAudio()
         recognitionRequest = nil
     }
     
+    // Add method to receive audio samples from CameraManager
+    func appendAudioSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
+        // First check authorization
+        guard isAuthorized else {
+            print("🎤 Buffer skipped - not authorized")
+            return
+        }
+        
+        // Then check listening state
+        guard isListening else {
+            print("🎤 Buffer skipped - isListening: \(isListening), isStarting: \(isStarting), hasError: \(hasError), isAuthorized: \(isAuthorized)")
+            return
+        }
+        
+        guard let recognitionRequest = recognitionRequest else {
+            print("🎤 Buffer skipped - recognitionRequest is nil, but isListening is true")
+            // This shouldn't happen - fix the state
+            isListening = false
+            return
+        }
+        
+        // Process the buffer
+        recognitionRequest.appendAudioSampleBuffer(sampleBuffer)
+    }
+    
     deinit {
         cleanup()
+    }
+    
+    func handleAppStateChange(isBackground: Bool) {
+        print("🎤 SpeechRecognizer: App state changed, isBackground: \(isBackground)")
+        
+        if isBackground {
+            self.isInBackground = true
+            stopListening()
+            print("🎤 SpeechRecognizer: Stopped listening due to background state")
+        } else {
+            self.isInBackground = false
+            isStarting = false // Reset starting state
+            hasError = false // Clear any errors
+            isInitializing = false // Not initializing
+            print("🎤 SpeechRecognizer: Reset state after background")
+        }
     }
 }

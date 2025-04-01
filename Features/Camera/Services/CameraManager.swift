@@ -1,6 +1,28 @@
 import AVFoundation
 import Photos
 
+extension CameraManager: AVCaptureAudioDataOutputSampleBufferDelegate {
+    func captureOutput(_ output: AVCaptureOutput,
+                       didOutput sampleBuffer: CMSampleBuffer,
+                       from connection: AVCaptureConnection) {
+        // Only process audio samples
+        guard let formatDesc = CMSampleBufferGetFormatDescription(sampleBuffer),
+              CMFormatDescriptionGetMediaType(formatDesc) == kCMMediaType_Audio
+        else {
+            return
+        }
+        
+        // Debug: Print audio format details
+        if let audioDesc = CMSampleBufferGetFormatDescription(sampleBuffer) {
+            let asbd = CMAudioFormatDescriptionGetStreamBasicDescription(audioDesc)?.pointee
+//            print("🎤 Audio format - sample rate: \(asbd?.mSampleRate ?? 0), channels: \(asbd?.mChannelsPerFrame ?? 0)")
+        }
+        
+        // Forward audio samples to speech recognizer
+        speechRecognizer?.appendAudioSampleBuffer(sampleBuffer)
+    }
+}
+
 class CameraManager: NSObject, ObservableObject {
     @Published var session = AVCaptureSession()
     @Published var isRecording = false
@@ -8,11 +30,15 @@ class CameraManager: NSObject, ObservableObject {
     @Published var isReady = false
     @Published var microphonePermissionGranted = false
     
+    // Add speech recognizer property
+    weak var speechRecognizer: SpeechRecognizer?
+    
     private var videoOutput: AVCaptureMovieFileOutput?
     private var currentCamera: AVCaptureDevice?
     private var currentPosition: AVCaptureDevice.Position = .back
     private var currentVideoUrl: URL?
-    
+    private let audioDataOutput = AVCaptureAudioDataOutput()
+
     private let settingsManager = SettingsManager.shared
     
     private var supportedZoomFactors: [CGFloat] = []
@@ -99,50 +125,65 @@ class CameraManager: NSObject, ObservableObject {
         }
     }
     
+    // Add method to set speech recognizer
+    func setSpeechRecognizer(_ recognizer: SpeechRecognizer) {
+        self.speechRecognizer = recognizer
+        
+        // If session is already configured, add audio output for speech recognition
+        if session.isRunning {
+            session.beginConfiguration()
+            
+            // Remove existing audio output if any
+            if let existingOutput = session.outputs.first(where: { $0 is AVCaptureAudioDataOutput }) {
+                session.removeOutput(existingOutput)
+            }
+            
+            // Add new audio output
+            if session.canAddOutput(audioDataOutput) {
+                session.addOutput(audioDataOutput)
+                audioDataOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "AudioDataOutputQueue"))
+            }
+            
+            session.commitConfiguration()
+        }
+    }
+
     private func setupAudioSession() {
         do {
             let audioSession = AVAudioSession.sharedInstance()
+            try? audioSession.setActive(false)
             
-            // First deactivate the session
-            try audioSession.setActive(false)
-            
-            // Configure the audio session
+            // Configure single audio session for both recording and recognition
             try audioSession.setCategory(.playAndRecord, 
-                                       mode: .videoRecording,
-                                       options: [.allowBluetooth, .mixWithOthers])
+                                      mode: .videoRecording,
+                                      options: [.allowBluetooth, .mixWithOthers])
             
-            // Set the preferred sample rate
-            let preferredSampleRate: Double = 44100.0
-            try audioSession.setPreferredSampleRate(preferredSampleRate)
+            // Set preferred audio format
+            try audioSession.setPreferredSampleRate(44100.0)
+            try audioSession.setPreferredIOBufferDuration(0.005) // 5ms buffer for low latency
             
-            // Set a reasonable I/O buffer duration
-            let preferredIOBufferDuration: TimeInterval = 0.005
-            try audioSession.setPreferredIOBufferDuration(preferredIOBufferDuration)
-            
-            // Finally activate the session
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
             
-            print("Audio session setup successful")
-            print("Sample rate: \(audioSession.sampleRate)")
-            print("IO Buffer duration: \(audioSession.ioBufferDuration)")
-            print("Input number of channels: \(audioSession.inputNumberOfChannels)")
+            // Debug: Print audio session details
+            print("🎤📱 Audio session configured:")
+            print("- Sample rate: \(audioSession.sampleRate)")
+            print("- IO buffer duration: \(audioSession.ioBufferDuration)")
+            print("- Input channels: \(audioSession.inputNumberOfChannels)")
+            print("- Category: \(audioSession.category)")
+            print("- Mode: \(audioSession.mode)")
             
-        } catch let error as NSError {
-            print("Audio session setup failed: \(error.localizedDescription)")
-            print("Error code: \(error.code)")
-            print("Error domain: \(error.domain)")
-            print("Error user info: \(error.userInfo)")
+        } catch {
+            print("🎤📱 Audio session setup failed: \(error)")
         }
     }
-    
+
     func setupCamera() {
-        // Stop any existing session
-        if session.isRunning {
-            session.stopRunning()
-        }
+        session.beginConfiguration()
+        
+        // Setup audio session first
+        setupAudioSession()
         
         // Remove any existing inputs and outputs
-        session.beginConfiguration()
         session.inputs.forEach { session.removeInput($0) }
         session.outputs.forEach { session.removeOutput($0) }
         
@@ -155,7 +196,7 @@ class CameraManager: NSObject, ObservableObject {
         currentCamera = device
         
         do {
-            // Add video input first
+            // Add video input
             let input = try AVCaptureDeviceInput(device: device)
             if session.canAddInput(input) {
                 session.addInput(input)
@@ -166,41 +207,38 @@ class CameraManager: NSObject, ObservableObject {
                 return
             }
             
-            // Configure video output
-            videoOutput = AVCaptureMovieFileOutput()
-            if let videoOutput = videoOutput {
-                if session.canAddOutput(videoOutput) {
-                    session.addOutput(videoOutput)
-                } else {
-                    print("Could not add video output")
-                    session.commitConfiguration()
-                    isReady = false
-                    return
-                }
-            }
-            
-            // Set up audio session before adding audio input
-            setupAudioSession()
-            
-            // Add audio input only if microphone permission is granted
+            // Add single audio input for both recording and recognition
             if microphonePermissionGranted,
                let audioDevice = AVCaptureDevice.default(for: .audio),
                let audioInput = try? AVCaptureDeviceInput(device: audioDevice) {
                 if session.canAddInput(audioInput) {
                     session.addInput(audioInput)
-                    print("Added audio input successfully")
-                } else {
-                    print("Could not add audio input")
+                    print("🎤📱 Added unified audio input")
                 }
             }
             
-            // Set session preset after configuring inputs and outputs
+            // Add movie file output for recording
+            videoOutput = AVCaptureMovieFileOutput()
+            if let videoOutput = videoOutput {
+                if session.canAddOutput(videoOutput) {
+                    session.addOutput(videoOutput)
+                    print("📱 Added video output")
+                }
+            }
+            
+            // Add audio data output for speech recognition
+            if session.canAddOutput(audioDataOutput) {
+                session.addOutput(audioDataOutput)
+                audioDataOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "AudioDataOutputQueue"))
+                print("🎤 Added audio data output")
+            }
+            
+            // Set high quality preset
             session.sessionPreset = .hd1920x1080
             
-            // IMPORTANT: Commit configuration before starting the session
             session.commitConfiguration()
             
-            // Start session on background thread
+            // Start session
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
                 self?.session.startRunning()
                 DispatchQueue.main.async {
@@ -209,7 +247,7 @@ class CameraManager: NSObject, ObservableObject {
             }
             
         } catch {
-            print("Camera setup failed: \(error.localizedDescription)")
+            print("Camera setup failed: \(error)")
             session.commitConfiguration()
             isReady = false
         }

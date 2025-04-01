@@ -59,6 +59,9 @@ class CameraViewModel: ObservableObject {
         self.cameraManager = cameraManager
         self.speechRecognizer = SpeechRecognizer()
         
+        // Set speech recognizer in camera manager
+        cameraManager.setSpeechRecognizer(speechRecognizer)
+        
         // Remove the isRecording binding since we're using recordingState now
         
         // Observe credits balance changes using Combine
@@ -393,5 +396,67 @@ class CameraViewModel: ObservableObject {
     // Add this method to reset the flag after sound is played
     func readySoundWasPlayed() {
         shouldPlayReadySound = false
+    }
+
+    // Add a method to handle returning from any context
+    private func handleReturnToCamera() {
+        print("📸 CameraViewModel: Handling return to camera context")
+        
+        // First stop any existing recognition
+        speechRecognizer.stopListening()
+        
+        Task {
+            // Give time for cleanup
+            try? await Task.sleep(for: .seconds(0.5))
+            
+            // Only restart if we're in a good state
+            if !speechRecognizer.hasError && !speechRecognizer.isInitializing {
+                print("📸 CameraViewModel: Restarting speech recognition in camera context")
+                speechRecognizer.startListening(context: .camera)
+                
+                // Verify restart was successful
+                try? await Task.sleep(for: .seconds(0.3))
+                if speechRecognizer.isListening {
+                    print("📸 CameraViewModel: Successfully restarted speech recognition")
+                } else {
+                    print("📸 CameraViewModel: Failed to restart speech recognition")
+                }
+            } else {
+                print("📸 CameraViewModel: Not restarting - hasError: \(speechRecognizer.hasError), isInitializing: \(speechRecognizer.isInitializing)")
+            }
+        }
+    }
+    
+    // Update the background state handling
+    func handleAppStateChange(isBackground: Bool) {
+        print("📸 CameraViewModel: App state changed - isBackground: \(isBackground)")
+        
+        speechRecognizer.handleAppStateChange(isBackground: isBackground)
+        
+        if !isBackground {
+            // Coming back from background
+            Task {
+                try? await Task.sleep(for: .seconds(0.5))
+                handleReturnToCamera()
+            }
+        }
+    }
+    
+    // Add handling for returning from save dialog
+    func handleSaveDialogDismissed() {
+        print("📸 CameraViewModel: Save dialog dismissed")
+        Task {
+            try? await Task.sleep(for: .seconds(0.3))
+            handleReturnToCamera()
+        }
+    }
+    
+    // Add handling for returning from settings
+    func handleSettingsDismissed() {
+        print("📸 CameraViewModel: Settings dismissed")
+        Task {
+            try? await Task.sleep(for: .seconds(0.3))
+            handleReturnToCamera()
+        }
     }
 }

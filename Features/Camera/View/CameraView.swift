@@ -152,12 +152,14 @@ struct CameraView: View {
                     SaveTakeDialog(
                         takeNumber: viewModel.currentTake,
                         onSave: {
-                            print("📱 CameraView: Save action triggered")
                             viewModel.saveTake()
+                            viewModel.showingSaveDialog = false
+                            viewModel.handleSaveDialogDismissed()
                         },
                         onDiscard: {
-                            print("📱 CameraView: Discard action triggered")
                             viewModel.discardTake()
+                            viewModel.showingSaveDialog = false
+                            viewModel.handleSaveDialogDismissed()
                         },
                         speechRecognizer: viewModel.speechRecognizer
                     )
