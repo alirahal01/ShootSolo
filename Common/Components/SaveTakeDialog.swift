@@ -1,6 +1,10 @@
 import SwiftUI
 import Combine
+import AVFoundation
+import Photos
+import Speech
 
+// MARK: - SaveTakeDialog (Unchanged except for referencing the new SpeechRecognizer)
 struct SaveTakeDialog: View {
     let takeNumber: Int
     let onSave: () -> Void
@@ -52,16 +56,15 @@ struct SaveTakeDialog: View {
         .background(Color.white)
         .cornerRadius(16)
         .shadow(radius: 10)
-        .onChange(of: speechRecognizer.isListening) { isListening in
+        .onChange(of: speechRecognizer.isListening) { _ in
             checkAndPlaySound()
         }
-        .onChange(of: speechRecognizer.hasError) { hasError in
+        .onChange(of: speechRecognizer.hasError) { _ in
             checkAndPlaySound()
         }
         .onAppear {
             hasPlayedSound = false
             checkAndPlaySound()
-            
             // Force start listening in save dialog context
             speechRecognizer.startListening(context: .saveDialog)
         }
@@ -69,9 +72,9 @@ struct SaveTakeDialog: View {
     
     private func checkAndPlaySound() {
         // Only play sound once when conditions are met
-        if !hasPlayedSound && 
-           speechRecognizer.isListening && 
-           !speechRecognizer.hasError {
+        if !hasPlayedSound
+            && speechRecognizer.isListening
+            && !speechRecognizer.hasError {
             SoundManager.shared.playSaveTakeSound(speechRecognizer: speechRecognizer)
             hasPlayedSound = true
         }
@@ -90,11 +93,12 @@ struct SaveTakeDialog: View {
     }
 }
 
-#Preview {
-    SaveTakeDialog(
-        takeNumber: 1,
-        onSave: {},
-        onDiscard: {},
-        speechRecognizer: SpeechRecognizer()
-    )
+// Needed for AudioDataOutput
+
+
+// Helper
+extension FileManager {
+    func fileExists(at path: String) -> Bool {
+        return FileManager.default.fileExists(atPath: path)
+    }
 }

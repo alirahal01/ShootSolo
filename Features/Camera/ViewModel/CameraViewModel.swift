@@ -2,29 +2,17 @@ import Foundation
 import Combine
 import AVFoundation
 import SwiftUI
+import Photos
 
 @MainActor
 class CameraViewModel: ObservableObject {
-    // Add recording state enum
     enum RecordingState {
-        case idle
-        case starting
-        case recording
-        case stopping
-        case savingDialog
-        
-        var canStart: Bool {
-            self == .idle
-        }
-        
-        var canStop: Bool {
-            self == .recording
-        }
+        case idle, starting, recording, stopping, savingDialog
+        var canStart: Bool { self == .idle }
+        var canStop: Bool { self == .recording }
     }
     
-    // Add state property
     @Published var isRecording = false
-    
     @Published var isGridEnabled = false
     @Published var isFlashOn = false
     @Published var currentTake = 1
@@ -34,189 +22,81 @@ class CameraViewModel: ObservableObject {
     @Published var timerText: String = "00:00"
     @Published var creditCount: Int = 0
     @Published var showingCreditsView = false
-    
-    var cameraManager: CameraManager
-    private var recordingTimer: Timer?
-    private var cancellables = Set<AnyCancellable>()
-    var speechRecognizer: SpeechRecognizer
-    @StateObject private var adViewModel = RewardedAdViewModel.shared
-    private var lastRecordingStopTime: Date?
-    
-    // Add a didSet to keep recordingState in sync
-    private var recordingState: RecordingState = .idle {
-        didSet {
-            isRecording = (recordingState == .recording)
-        }
-    }
-    
-    // Add a property to track initialization state
     @Published private(set) var isInitialized = false
     
-    // Add this property to CameraViewModel
+    var cameraManager: CameraManager
+    var speechRecognizer: SpeechRecognizer
+    
+    private var recordingTimer: Timer?
+    private var cancellables = Set<AnyCancellable>()
+    private var recordingState: RecordingState = .idle {
+        didSet { isRecording = (recordingState == .recording) }
+    }
+    
+    // Controls if we play "Ready" sound
     @Published var shouldPlayReadySound = false
     
     init(cameraManager: CameraManager = CameraManager()) {
         self.cameraManager = cameraManager
         self.speechRecognizer = SpeechRecognizer()
-        
-        // Set speech recognizer in camera manager
         cameraManager.setSpeechRecognizer(speechRecognizer)
         
-        // Remove the isRecording binding since we're using recordingState now
-        
-        // Observe credits balance changes using Combine
+        // Observe credits
         CreditsManager.shared.$creditsBalance
             .receive(on: RunLoop.main)
             .assign(to: &$creditCount)
         
-        // Set up speech recognizer command handling
-        setupSpeechRecognizer()
-        
-        // Initialize components
-        Task { @MainActor in
-            await initialize()
-        }
-    }
-    
-    private func setupSpeechRecognizer() {
+        // Handle voice commands
         speechRecognizer.onCommandDetected = { [weak self] command in
             Task { [weak self] in
                 guard let self = self else { return }
-                print("📸 CameraViewModel: Received command: \(command)")
                 switch command {
                 case "start":
                     if self.recordingState.canStart {
-                        print("📸 CameraViewModel: Processing START command")
                         await self.startRecording()
-                    } else {
-                        print("📸 CameraViewModel: Ignoring START command - current state: \(self.recordingState)")
                     }
                 case "stop":
                     if self.recordingState.canStop {
-                        print("📸 CameraViewModel: Processing STOP command")
                         await self.stopRecording()
-                    } else {
-                        print("📸 CameraViewModel: Ignoring STOP command - current state: \(self.recordingState)")
                     }
                 case "yes":
                     if case .savingDialog = self.recordingState {
-                        print("📸 CameraViewModel: Processing YES command")
                         self.saveTake()
                     }
                 case "no":
                     if case .savingDialog = self.recordingState {
-                        print("📸 CameraViewModel: Processing NO command")
                         self.discardTake()
                     }
                 default:
                     break
                 }
+                self.forceRestartSpeechRecognition()
             }
+        }
+        
+        Task { @MainActor in
+            await self.initialize()
         }
     }
     
     private func initialize() async {
-        // Ensure we have an ad ready
-        if adViewModel.rewardedAd == nil && !adViewModel.isLoading {
-            adViewModel.loadAd()
-        }
-        
-        // Wait a moment for components to settle
+        // Attempt to load an ad, etc. if needed
         try? await Task.sleep(for: .seconds(0.5))
         
-        // Check if speech recognizer is already listening or initializing
-        if !speechRecognizer.isListening && !speechRecognizer.isInitializing && !speechRecognizer.hasError {
-            print("📸 CameraViewModel: Starting speech recognition during initialization")
+        // Attempt to auto-start recognition if not in error
+        if !speechRecognizer.isListening,
+           !speechRecognizer.isInitializing,
+           !speechRecognizer.hasError {
             speechRecognizer.startListening(context: .camera)
-        } else {
-            print("📸 CameraViewModel: Speech recognizer state during init - listening: \(speechRecognizer.isListening), initializing: \(speechRecognizer.isInitializing), hasError: \(speechRecognizer.hasError)")
         }
-        
         isInitialized = true
     }
     
-    // Add a method to restart speech recognition
-    func restartSpeechRecognition() {
-        print("📸 CameraViewModel: Attempting to restart speech recognition")
-        
-        // Don't restart if still initializing
-        if speechRecognizer.isInitializing {
-            print("📸 CameraViewModel: Speech recognizer is still initializing, not restarting")
-            return
-        }
-        
-        // Stop any existing session first
-        speechRecognizer.stopListening()
-        
-        Task { @MainActor in
-            // Give a moment for the previous session to fully stop
-            try? await Task.sleep(for: .seconds(0.5))
-            
-            // Start new listening session with appropriate context
-            let context: CommandContext = showingSaveDialog ? .saveDialog : .camera
-            
-            // Only start if we're in an appropriate state
-            if !speechRecognizer.hasError {
-                print("📸 CameraViewModel: Restarting speech recognition with context: \(context)")
-                speechRecognizer.startListening(context: context)
-                
-                // Wait a moment to check if start was successful
-                try? await Task.sleep(for: .seconds(0.3))
-                
-                if speechRecognizer.isListening {
-                    print("📸 CameraViewModel: Speech recognition restarted successfully")
-                } else {
-                    print("📸 CameraViewModel: Could not restart speech recognition")
-                }
-            }
-        }
-    }
-    
-    // Add this new method for forced restart after background
-    func forceRestartSpeechRecognition() {
-        print("📸 CameraViewModel: Force restarting speech recognition after background")
-        
-        // First stop any existing session
-        speechRecognizer.stopListening()
-        
-        // Then start a new session with a clean state
-        Task { @MainActor in
-            // Give a moment for the previous session to fully stop
-            try? await Task.sleep(for: .seconds(0.3))
-            
-            // Get the appropriate context based on current UI state
-            let context: CommandContext = showingSaveDialog ? .saveDialog : .camera
-            
-            // Set flag to play ready sound when coming back from background
-            shouldPlayReadySound = false
-            
-            print("📸 CameraViewModel: Force starting speech recognition with context: \(context), showingSaveDialog: \(showingSaveDialog)")
-            speechRecognizer.startListening(context: context)
-            
-            // Log the result
-            try? await Task.sleep(for: .seconds(0.3))
-            print("📸 CameraViewModel: Force restart result - listening: \(speechRecognizer.isListening), error: \(speechRecognizer.hasError), context: \(context)")
-        }
-    }
-    
-    private var currentFileName: String {
-        FileNameGenerator.generateVideoFileName(takeNumber: currentTake)
-    }
-
-    // Update recordingState with didSet to keep isRecording in sync
-    private func updateRecordingState(_ newState: RecordingState) {
-        print("📸 CameraViewModel: State changing from \(recordingState) to \(newState)")
-        recordingState = newState
-        // isRecording is now automatically updated via didSet
-    }
+    // Mark: - Start/Stop Recording
     
     func startRecording() async {
-        guard recordingState.canStart else {
-            print("📸 CameraViewModel: Cannot start recording in current state: \(recordingState)")
-            return
-        }
-        
-        updateRecordingState(.starting)
+        guard recordingState.canStart else { return }
+        recordingState = .starting
         
         if await CreditsManager.shared.useCredit() {
             let soundDuration = SoundManager.shared.getStartSoundDuration()
@@ -225,20 +105,16 @@ class CameraViewModel: ObservableObject {
             
             cameraManager.startRecording()
             startTimer()
-            updateRecordingState(.recording)
+            recordingState = .recording
         } else {
-            updateRecordingState(.idle)
+            recordingState = .idle
             showingCreditsView = true
         }
     }
     
     func stopRecording() async {
-        guard recordingState.canStop else {
-            print("📸 CameraViewModel: Cannot stop recording in current state: \(recordingState)")
-            return
-        }
-        
-        updateRecordingState(.stopping)
+        guard recordingState.canStop else { return }
+        recordingState = .stopping
         
         cameraManager.stopRecording()
         stopTimer()
@@ -250,53 +126,97 @@ class CameraViewModel: ObservableObject {
         speechRecognizer.stopListening()
         try? await Task.sleep(for: .seconds(0.3))
         
-        updateRecordingState(.savingDialog)
+        recordingState = .savingDialog
         showingSaveDialog = true
         speechRecognizer.startListening(context: .saveDialog)
     }
     
     func saveTake() {
         guard case .savingDialog = recordingState else { return }
-        
         cameraManager.saveTake(fileName: currentFileName)
         currentTake += 1
-        
         speechRecognizer.stopListening()
         showingSaveDialog = false
         
-        Task { [weak self] in
-            guard let self = self else { return }
+        Task {
             try? await Task.sleep(for: .seconds(0.3))
-            updateRecordingState(.idle)
-            
-            // Set flag to play ready sound after saving
+            recordingState = .idle
             shouldPlayReadySound = true
-            
-            // Explicitly restart speech recognition
-            restartSpeechRecognition()
+            forceRestartSpeechRecognition()
         }
     }
     
     func discardTake() {
         guard case .savingDialog = recordingState else { return }
-        
         cameraManager.discardTake()
-        
         speechRecognizer.stopListening()
         showingSaveDialog = false
         
-        Task { [weak self] in
-            guard let self = self else { return }
+        Task {
             try? await Task.sleep(for: .seconds(0.3))
-            updateRecordingState(.idle)
-            
-            // Set flag to play ready sound after discarding
+            recordingState = .idle
             shouldPlayReadySound = true
-            
-            // Explicitly restart speech recognition
-            restartSpeechRecognition()
+            forceRestartSpeechRecognition()
         }
     }
+    
+    private var currentFileName: String {
+        FileNameGenerator.generateVideoFileName(takeNumber: currentTake)
+    }
+    
+    // MARK: - Timer
+    
+    private func startTimer() {
+        recordingTime = 0
+        updateTimerText()
+        stopTimer(resetText: false)
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+                guard let self = self else { return }
+                if self.isRecording {
+                    self.recordingTime += 1
+                    self.updateTimerText()
+                } else {
+                    self.stopTimer()
+                }
+            }
+            if let timer = self.recordingTimer {
+                timer.tolerance = 0.1
+                RunLoop.current.add(timer, forMode: .common)
+            }
+        }
+    }
+    
+    private func stopTimer(resetText: Bool = true) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.recordingTimer?.invalidate()
+            self.recordingTimer = nil
+            if resetText {
+                self.recordingTime = 0
+                self.updateTimerText()
+            }
+        }
+    }
+    
+    private func updateTimerText() {
+        guard recordingTime >= 0 else {
+            timerText = "00:00:00"
+            return
+        }
+        let hours = Int(recordingTime / 3600)
+        let minutes = Int((recordingTime % 3600) / 60)
+        let seconds = Int(recordingTime % 60)
+        if hours > 0 {
+            timerText = String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        } else {
+            timerText = String(format: "%02d:%02d", minutes, seconds)
+        }
+    }
+    
+    // MARK: - Flash, Camera, Zoom
     
     func toggleFlash() {
         isFlashOn.toggle()
@@ -312,151 +232,58 @@ class CameraViewModel: ObservableObject {
         cameraManager.setZoomFactor(factor)
     }
     
-    func startTimer() {
-        recordingTime = 0
-        updateTimerText()
-        stopTimer(resetText: false)
+    // MARK: - Forced Speech Recognition Restart
+    func forceRestartSpeechRecognition() {
+        // STOP
+        speechRecognizer.stopListening()
         
-        // Create timer on the main thread - use [weak self]
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
-            self.recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-                guard let self = self else { return }
-                
-                // Only increment if still recording
-                if self.isRecording {
-                    self.recordingTime += 1
-                    self.updateTimerText()
-                } else {
-                    self.stopTimer()
-                }
-            }
-            
-            // Make sure timer runs in common modes (works during scrolling etc)
-            if let timer = self.recordingTimer {
-                timer.tolerance = 0.1
-                RunLoop.current.add(timer, forMode: .common)
+        // After short delay, START
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            if !self.speechRecognizer.hasError,
+               !self.speechRecognizer.isInitializing {
+                let context: CommandContext = self.showingSaveDialog ? .saveDialog : .camera
+                self.speechRecognizer.startListening(context: context)
             }
         }
     }
     
-    func stopTimer(resetText: Bool = true) {
-        // Invalidate on main thread - use [weak self]
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
-            self.recordingTimer?.invalidate()
-            self.recordingTimer = nil
-            
-            if resetText {
-                self.recordingTime = 0
-                self.updateTimerText()
-            }
-        }
-    }
-    
-    private func updateTimerText() {
-        // Guard against negative times
-        guard recordingTime >= 0 else {
-            timerText = "00:00:00"
-            return
-        }
-        
-        let hours = Int(recordingTime / 3600)
-        let minutes = Int((recordingTime % 3600) / 60)
-        let seconds = Int(recordingTime % 60)
-        
-        if hours > 0 {
-            // Show hours when recording exceeds 1 hour
-            timerText = String(format: "%02d:%02d:%02d", hours, minutes, seconds)
-        } else {
-            // Show only minutes and seconds when under 1 hour
-            timerText = String(format: "%02d:%02d", minutes, seconds)
-        }
-    }
-
-    deinit {
-        print("CameraViewModel deinit started")
-        
-        // Clean up speech recognizer first
-        speechRecognizer.cleanup()
-        speechRecognizer.onCommandDetected = nil
-        
-        // Cancel all subscriptions
-        cancellables.removeAll()
-        
-        // Stop timer and nil it out
-        recordingTimer?.invalidate()
-        recordingTimer = nil
-        
-        print("CameraViewModel deinit completed")
-    }
-
-    // Add this method to reset the flag after sound is played
+    // Reset the ready sound flag once played
     func readySoundWasPlayed() {
         shouldPlayReadySound = false
     }
-
-    // Add a method to handle returning from any context
-    private func handleReturnToCamera() {
-        print("📸 CameraViewModel: Handling return to camera context")
-        
-        // First stop any existing recognition
-        speechRecognizer.stopListening()
-        
+    
+    // Save dialog dismissed
+    func handleSaveDialogDismissed() {
         Task {
-            // Give time for cleanup
-            try? await Task.sleep(for: .seconds(0.5))
-            
-            // Only restart if we're in a good state
-            if !speechRecognizer.hasError && !speechRecognizer.isInitializing {
-                print("📸 CameraViewModel: Restarting speech recognition in camera context")
-                speechRecognizer.startListening(context: .camera)
-                
-                // Verify restart was successful
-                try? await Task.sleep(for: .seconds(0.3))
-                if speechRecognizer.isListening {
-                    print("📸 CameraViewModel: Successfully restarted speech recognition")
-                } else {
-                    print("📸 CameraViewModel: Failed to restart speech recognition")
-                }
-            } else {
-                print("📸 CameraViewModel: Not restarting - hasError: \(speechRecognizer.hasError), isInitializing: \(speechRecognizer.isInitializing)")
-            }
+            try? await Task.sleep(for: .seconds(0.3))
+            forceRestartSpeechRecognition()
         }
     }
     
-    // Update the background state handling
+    // Settings dismissed
+    func handleSettingsDismissed() {
+        Task {
+            try? await Task.sleep(for: .seconds(0.3))
+            forceRestartSpeechRecognition()
+        }
+    }
+    
+    // Handle background/foreground
     func handleAppStateChange(isBackground: Bool) {
-        print("📸 CameraViewModel: App state changed - isBackground: \(isBackground)")
-        
         speechRecognizer.handleAppStateChange(isBackground: isBackground)
-        
         if !isBackground {
-            // Coming back from background
+            // After we return from background, do a forced restart
             Task {
                 try? await Task.sleep(for: .seconds(0.5))
-                handleReturnToCamera()
+                forceRestartSpeechRecognition()
             }
         }
     }
     
-    // Add handling for returning from save dialog
-    func handleSaveDialogDismissed() {
-        print("📸 CameraViewModel: Save dialog dismissed")
-        Task {
-            try? await Task.sleep(for: .seconds(0.3))
-            handleReturnToCamera()
-        }
-    }
-    
-    // Add handling for returning from settings
-    func handleSettingsDismissed() {
-        print("📸 CameraViewModel: Settings dismissed")
-        Task {
-            try? await Task.sleep(for: .seconds(0.3))
-            handleReturnToCamera()
-        }
+    deinit {
+        speechRecognizer.cleanup()
+        cancellables.removeAll()
+        recordingTimer?.invalidate()
+        recordingTimer = nil
     }
 }
