@@ -16,7 +16,6 @@ class SpeechRecognizer: NSObject, ObservableObject {
     @Published var errorMessage: String?
     @Published var isInitializing = true
     @Published var isWaitingForSpeech = false
-    @Published var lastDetectedCommand: String?
     
     var onCommandDetected: ((String) -> Void)?
     
@@ -229,15 +228,9 @@ class SpeechRecognizer: NSObject, ObservableObject {
                 let lastTwoWords = Array(words.suffix(2)).joined(separator: " ")
                 if settingsManager.isStartCommand(lastTwoWords) {
                     print("🎤 ✅ ✅ ✅ SpeechRecognizer: Detected START command: '\(lastTwoWords)'")
-                    DispatchQueue.main.async {
-                        self.lastDetectedCommand = "START"
-                    }
                     onCommandDetected?("start")
                 } else if settingsManager.isStopCommand(lastTwoWords) {
                     print("🎤 ✅ ✅ ✅ SpeechRecognizer: Detected STOP command: '\(lastTwoWords)'")
-                    DispatchQueue.main.async {
-                        self.lastDetectedCommand = "STOP"
-                    }
                     onCommandDetected?("stop")
                 }
             }
@@ -245,24 +238,12 @@ class SpeechRecognizer: NSObject, ObservableObject {
             if let lastWord = words.last {
                 if lastWord == "yes" {
                     print("🎤 ✅ ✅ ✅ SpeechRecognizer: Detected YES command")
-                    DispatchQueue.main.async {
-                        self.lastDetectedCommand = "YES"
-                    }
                     onCommandDetected?("yes")
                 } else if lastWord == "no" {
                     print("🎤 ✅ ✅ ✅ SpeechRecognizer: Detected NO command")
-                    DispatchQueue.main.async {
-                        self.lastDetectedCommand = "NO"
-                    }
                     onCommandDetected?("no")
                 }
             }
-        }
-        
-        // Clear last detected command after a delay
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(2.0))
-            self.lastDetectedCommand = nil
         }
     }
     
