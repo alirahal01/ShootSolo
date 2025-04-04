@@ -57,8 +57,8 @@ struct SettingsModel: Codable {
     
     static var defaultSettings: SettingsModel {
         return SettingsModel(
-            selectedStartKeyword: .andAction,
-            selectedStopKeyword: .andCut,
+            selectedStartKeyword: .startRecording,
+            selectedStopKeyword: .stopRecording,
             videoSettings: VideoSettings(
                 resolution: .uhd4k,
                 framerate: .fps60
