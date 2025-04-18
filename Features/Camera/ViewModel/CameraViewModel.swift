@@ -129,6 +129,12 @@ class CameraViewModel: ObservableObject {
         recordingState = .savingDialog
         showingSaveDialog = true
         speechRecognizer.startListening(context: .saveDialog)
+        
+        // Ensure the speech recognizer is restarted for the next command
+        Task {
+            try? await Task.sleep(for: .seconds(0.3))
+            forceRestartSpeechRecognition()
+        }
     }
     
     func saveTake() {
